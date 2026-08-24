@@ -1,3 +1,18 @@
+# Web API
+fastapi
+uvicorn[standard]
+pydantic-settings
+
+# Database and data import
+SQLAlchemy
+psycopg[binary]
+pandas
+python-dotenv
+
+# Agent dependencies (kept for later development)
 langchain
 langchain-deepseek
-python-dotenv
+
+# Tests
+httpx
+pytest
