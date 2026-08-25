@@ -16,3 +16,7 @@ langchain-deepseek
 # Tests
 httpx
 pytest
+
+alembic
+pwdlib[argon2]
+email-validator

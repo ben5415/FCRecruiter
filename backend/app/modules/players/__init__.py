@@ -1,0 +1,1 @@
+"""Player catalog module."""

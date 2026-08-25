@@ -5,12 +5,13 @@ PYTHON := $(VENV)/bin/python
 PIP := $(PYTHON) -m pip
 BACKEND_APP := app.main:app
 
-.PHONY: help setup install install-backend install-frontend \
+.PHONY: help setup setup-db install install-backend install-frontend \
 	dev dev-backend dev-frontend test test-backend build build-frontend
 
 help:
 	@echo "Available commands:"
 	@echo "  make setup          Create .venv and install Python/npm dependencies"
+	@echo "  make setup-db       Enable required PostgreSQL extensions"
 	@echo "  make dev-backend    Start FastAPI on http://localhost:8000"
 	@echo "  make dev-frontend   Start React on http://localhost:5173"
 	@echo "  make test           Run backend tests"
@@ -29,6 +30,9 @@ install-backend: $(PYTHON)
 
 install-frontend:
 	npm install --prefix frontend
+
+setup-db:
+	$(PYTHON) scripts/enable_unaccent.py
 
 # Run both development servers. Ctrl+C stops the Make target and its children.
 dev:

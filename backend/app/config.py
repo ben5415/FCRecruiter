@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     api_prefix: str = "/api"
     frontend_origin: str = "http://localhost:5173"
     database_url: str | None = None
+    managed_club_id: int = 11
 
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
