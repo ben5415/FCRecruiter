@@ -60,3 +60,11 @@ export function deleteUser(id: number, csrfToken: string): Promise<{ message: st
     headers: { "X-CSRF-Token": csrfToken },
   });
 }
+
+export function updateUserPassword(id: number, password: string, csrfToken: string): Promise<{ message: string }> {
+  return request(`/api/admin/users/${id}/password`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
+    body: JSON.stringify({ password }),
+  });
+}

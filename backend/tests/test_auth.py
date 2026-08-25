@@ -54,6 +54,17 @@ def test_roles_and_admin_user_management() -> None:
             )
             assert changed.status_code == 200
             assert changed.json()["managed_club"]["club_name"] == "Real Madrid"
+            password_changed = await client.patch(
+                "/api/admin/users/2/password",
+                headers={"X-CSRF-Token": csrf},
+                json={"password": "new-member-password"},
+            )
+            assert password_changed.status_code == 200
+            async with AsyncClient(transport=transport, base_url="http://testserver") as member_client:
+                old_login = await member_client.post("/api/auth/login", json={"identifier": "member", "password": "member-password"})
+                assert old_login.status_code == 401
+                new_login = await member_client.post("/api/auth/login", json={"identifier": "member", "password": "new-member-password"})
+                assert new_login.status_code == 200
             cannot_delete_self = await client.delete(
                 "/api/admin/users/1", headers={"X-CSRF-Token": csrf}
             )

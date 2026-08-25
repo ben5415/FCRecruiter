@@ -21,6 +21,10 @@ class UpdateUserRequest(BaseModel):
     managed_club_team_id: int | None = None
 
 
+class PasswordUpdateRequest(BaseModel):
+    password: SecretStr = Field(min_length=8, max_length=1024)
+
+
 class ClubOption(BaseModel):
     club_team_id: int
     club_name: str

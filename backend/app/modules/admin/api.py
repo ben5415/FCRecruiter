@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app.modules.admin.schemas import ClubListResponse, ClubOption, CreateUserRequest, UpdateUserRequest, UserListResponse
+from app.modules.admin.schemas import ClubListResponse, ClubOption, CreateUserRequest, PasswordUpdateRequest, UpdateUserRequest, UserListResponse
 from app.modules.auth.dependencies import AuthContext, require_admin, require_csrf
 from app.modules.auth.models import User, UserSession
 from app.modules.auth.schemas import MessageResponse, UserResponse
@@ -126,3 +126,26 @@ async def delete_user(
     db.delete(user)
     db.commit()
     return MessageResponse(message="User deleted")
+
+
+@router.patch("/users/{user_id}/password", response_model=MessageResponse)
+async def update_password(
+    user_id: int,
+    payload: PasswordUpdateRequest,
+    context: Annotated[AuthContext, Depends(require_csrf)],
+    _: Annotated[User, Depends(require_admin)],
+    db: Annotated[Session, Depends(get_db_session)],
+) -> MessageResponse:
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    user.password_hash = hash_password(payload.password.get_secret_value())
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc)
+    for auth_session in db.scalars(
+        select(UserSession).where(UserSession.user_id == user.id, UserSession.revoked_at.is_(None))
+    ):
+        if auth_session.id != context.session.id:
+            auth_session.revoked_at = now
+    db.commit()
+    return MessageResponse(message="Password updated")

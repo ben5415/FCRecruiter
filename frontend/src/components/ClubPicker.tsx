@@ -5,7 +5,7 @@ import { normalizeSearch } from "../utils/normalizeSearch";
 
 interface ClubPickerProps {
   clubs: ClubOption[];
-  value: number;
+  value: number | null;
   onChange: (clubId: number) => void;
   label: string;
   required?: boolean;
