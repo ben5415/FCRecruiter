@@ -5,13 +5,15 @@ PYTHON := $(VENV)/bin/python
 PIP := $(PYTHON) -m pip
 BACKEND_APP := app.main:app
 
-.PHONY: help setup setup-db install install-backend install-frontend \
+.PHONY: help setup setup-db migrate create-admin install install-backend install-frontend \
 	dev dev-backend dev-frontend test test-backend build build-frontend
 
 help:
 	@echo "Available commands:"
 	@echo "  make setup          Create .venv and install Python/npm dependencies"
 	@echo "  make setup-db       Enable required PostgreSQL extensions"
+	@echo "  make migrate        Apply database schema migrations"
+	@echo "  make create-admin   Interactively create an administrator"
 	@echo "  make dev-backend    Start FastAPI on http://localhost:8000"
 	@echo "  make dev-frontend   Start React on http://localhost:5173"
 	@echo "  make test           Run backend tests"
@@ -33,6 +35,13 @@ install-frontend:
 
 setup-db:
 	$(PYTHON) scripts/enable_unaccent.py
+	$(MAKE) migrate
+
+migrate:
+	PYTHONPATH=backend $(PYTHON) -m alembic upgrade head
+
+create-admin:
+	PYTHONPATH=backend $(PYTHON) scripts/create_admin.py
 
 # Run both development servers. Ctrl+C stops the Make target and its children.
 dev:

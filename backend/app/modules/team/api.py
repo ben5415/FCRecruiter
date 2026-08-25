@@ -3,21 +3,25 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.config import get_settings
+from app.modules.auth.dependencies import get_current_user
+from app.modules.auth.models import User
 from app.modules.players.schemas import ClubSummary, PlayerListItem
 from app.modules.team.repository import TeamRepository
 from app.modules.team.schemas import SquadResponse
 from app.shared.database import get_db_session
 
 
-router = APIRouter(prefix="/team", tags=["team"])
+router = APIRouter(
+    prefix="/team", tags=["team"], dependencies=[Depends(get_current_user)]
+)
 
 
 @router.get("/squad", response_model=SquadResponse)
 async def get_squad(
     session: Annotated[Session, Depends(get_db_session)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> SquadResponse:
-    result = TeamRepository(session).get_squad(get_settings().managed_club_id)
+    result = TeamRepository(session).get_squad(current_user.managed_club_team_id)
     if result is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
