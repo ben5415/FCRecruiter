@@ -21,7 +21,7 @@ async def get_squad(
     session: Annotated[Session, Depends(get_db_session)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> SquadResponse:
-    result = TeamRepository(session).get_squad(current_user.managed_club_team_id)
+    result = TeamRepository(session).get_squad(current_user.tenant.club_team_id)
     if result is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

@@ -7,6 +7,7 @@ from app.modules.auth.api import router as auth_router
 from app.modules.admin.api import router as admin_router
 from app.modules.players.api import router as players_router
 from app.modules.team.api import router as team_router
+from app.modules.events.api import router as events_router
 
 
 def create_app() -> FastAPI:
@@ -31,6 +32,7 @@ def create_app() -> FastAPI:
     app.include_router(admin_router, prefix=settings.api_prefix)
     app.include_router(players_router, prefix=settings.api_prefix)
     app.include_router(team_router, prefix=settings.api_prefix)
+    app.include_router(events_router, prefix=settings.api_prefix)
     return app
 
 

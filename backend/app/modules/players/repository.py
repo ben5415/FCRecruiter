@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from math import ceil
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.orm import Session, joinedload
 
 from app.modules.players.models import Player
@@ -66,3 +66,18 @@ class PlayerRepository:
         players = list(self.session.scalars(statement).unique().all())
 
         return PlayerPageResult(players, page, page_size, total)
+
+    def get_player_detail(self, player_id: int):
+        return self.session.execute(
+            text(
+                """
+                SELECT p.*, c.club_name, l.league_name, n.nationality_name
+                FROM players AS p
+                LEFT JOIN clubs AS c ON c.club_team_id = p.club_team_id
+                LEFT JOIN leagues AS l ON l.league_id = c.league_id
+                LEFT JOIN countries AS n ON n.nationality_id = p.nationality_id
+                WHERE p.player_id = :player_id
+                """
+            ),
+            {"player_id": player_id},
+        ).mappings().first()

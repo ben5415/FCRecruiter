@@ -5,7 +5,7 @@ PYTHON := $(VENV)/bin/python
 PIP := $(PYTHON) -m pip
 BACKEND_APP := app.main:app
 
-.PHONY: help setup setup-db migrate create-admin install install-backend install-frontend \
+.PHONY: help setup setup-db migrate tenant create-multitenant-db install install-backend install-frontend \
 	dev dev-backend dev-frontend test test-backend build build-frontend
 
 help:
@@ -13,7 +13,8 @@ help:
 	@echo "  make setup          Create .venv and install Python/npm dependencies"
 	@echo "  make setup-db       Enable required PostgreSQL extensions"
 	@echo "  make migrate        Apply database schema migrations"
-	@echo "  make create-admin   Interactively create an administrator"
+	@echo "  make tenant ARGS='list'  Manage tenants through the server-side CLI"
+	@echo "  make create-multitenant-db  Clone the current DB and apply tenant migration"
 	@echo "  make dev-backend    Start FastAPI on http://localhost:8000"
 	@echo "  make dev-frontend   Start React on http://localhost:5173"
 	@echo "  make test           Run backend tests"
@@ -40,8 +41,11 @@ setup-db:
 migrate:
 	PYTHONPATH=backend $(PYTHON) -m alembic upgrade head
 
-create-admin:
-	PYTHONPATH=backend $(PYTHON) scripts/create_admin.py
+tenant:
+	PYTHONPATH=backend $(PYTHON) scripts/manage_tenants.py $(ARGS)
+
+create-multitenant-db:
+	PYTHONPATH=backend $(PYTHON) scripts/create_multitenant_database.py
 
 # Run both development servers. Ctrl+C stops the Make target and its children.
 dev:

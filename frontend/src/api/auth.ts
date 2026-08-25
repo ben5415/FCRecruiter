@@ -1,6 +1,6 @@
 import { getApiError } from "./errors";
 
-export type Role = "user" | "admin";
+export type Role = "manager" | "player" | "doctor" | "coach";
 
 export interface CurrentUser {
   id: number;
@@ -9,8 +9,13 @@ export interface CurrentUser {
   email: string | null;
   role: Role;
   is_active: boolean;
-  managed_club_team_id: number;
-  managed_club: { club_team_id: number; club_name: string | null };
+  tenant_id: number;
+  tenant: {
+    id: number;
+    name: string;
+    slug: string;
+    club: { club_team_id: number; club_name: string | null };
+  };
 }
 
 export interface AuthResponse {

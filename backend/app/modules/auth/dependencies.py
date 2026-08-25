@@ -35,7 +35,11 @@ async def get_auth_context(
             UserSession.expires_at > datetime.now(timezone.utc),
         )
     )
-    if auth_session is None or not auth_session.user.is_active:
+    if (
+        auth_session is None
+        or not auth_session.user.is_active
+        or not auth_session.user.tenant.is_active
+    ):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired session")
     return AuthContext(user=auth_session.user, session=auth_session)
 
@@ -44,9 +48,9 @@ async def get_current_user(context: Annotated[AuthContext, Depends(get_auth_cont
     return context.user
 
 
-async def require_admin(user: Annotated[User, Depends(get_current_user)]) -> User:
-    if user.role != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Administrator access required")
+async def require_manager(user: Annotated[User, Depends(get_current_user)]) -> User:
+    if user.role.value != "manager":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Manager access required")
     return user
 
 

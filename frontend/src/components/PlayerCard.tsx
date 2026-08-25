@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import type { PlayerListItem } from "../api/players";
 
@@ -30,13 +31,25 @@ function positionGroup(positions: string | null): string {
 }
 
 export function PlayerCard({ player }: { player: PlayerListItem }) {
+  const navigate = useNavigate();
   const [imageFailed, setImageFailed] = useState(false);
   const name = player.short_name ?? player.long_name ?? `Player ${player.player_id}`;
   const initials = name.split(" ").map((part) => part[0]).join("").slice(0, 2);
   const group = positionGroup(player.player_positions);
 
   return (
-    <article className="player-card">
+    <article
+      className="player-card player-card--clickable"
+      role="link"
+      tabIndex={0}
+      onClick={() => navigate(`/players/${player.player_id}`)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          navigate(`/players/${player.player_id}`);
+        }
+      }}
+    >
       <div className="player-card__identity">
         <div className={`player-card__portrait player-card__portrait--${group}`}>
           {player.player_face_url && !imageFailed ? (

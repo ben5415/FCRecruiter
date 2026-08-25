@@ -13,10 +13,14 @@ class Settings(BaseSettings):
     api_prefix: str = "/api"
     frontend_origin: str = "http://localhost:5173"
     database_url: str | None = None
-    managed_club_id: int = 11
+    multitenant_database_url: str | None = None
     session_cookie_name: str = "recruitment_session"
     session_lifetime_hours: int = 24
     cookie_secure: bool = False
+
+    @property
+    def effective_database_url(self) -> str | None:
+        return self.multitenant_database_url or self.database_url
 
     @property
     def allowed_frontend_origins(self) -> list[str]:

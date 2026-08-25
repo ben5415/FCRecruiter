@@ -10,7 +10,9 @@ from app.shared.database import Base
 
 
 config = context.config
-config.set_main_option("sqlalchemy.url", get_settings().database_url or "")
+configured_url = config.get_main_option("sqlalchemy.url")
+if not configured_url or configured_url == "driver://unused":
+    config.set_main_option("sqlalchemy.url", get_settings().effective_database_url or "")
 if config.config_file_name:
     fileConfig(config.config_file_name)
 target_metadata = Base.metadata

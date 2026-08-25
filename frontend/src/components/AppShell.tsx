@@ -27,11 +27,11 @@ export function AppShell() {
     }
   }
   return (
-    <div className={sidebarCollapsed ? "app-layout app-layout--collapsed" : "app-layout"} data-theme={getTeamTheme(user?.managed_club_team_id)}>
+    <div className={sidebarCollapsed ? "app-layout app-layout--collapsed" : "app-layout"} data-theme={getTeamTheme(user?.tenant.club.club_team_id)}>
       <aside className="sidebar">
         <div className="sidebar-header">
           <NavLink className="brand" to="/marketplace">
-            <span>{user?.managed_club.club_name || "Football Recruitment Hub"}</span>
+            <span>{user?.tenant.club.club_name || "Football Recruitment Hub"}</span>
           </NavLink>
           <button
             aria-label={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
@@ -46,7 +46,8 @@ export function AppShell() {
           <div className="nav-links">
             <NavLink data-short="S" to="/squad"><span>Squad</span></NavLink>
             <NavLink data-short="M" to="/marketplace"><span>Marketplace</span></NavLink>
-            {user?.role === "admin" && <NavLink data-short="A" to="/admin/users"><span>Accounts</span></NavLink>}
+            <NavLink data-short="E" to="/events"><span>Events</span></NavLink>
+            {user?.role === "manager" && <NavLink data-short="A" to="/admin/users"><span>Accounts</span></NavLink>}
           </div>
           <div className="account-menu">
             <span className="nav-user"><small>Signed in as</small>{user?.display_name || user?.username}</span>

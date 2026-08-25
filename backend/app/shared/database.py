@@ -13,7 +13,7 @@ class Base(DeclarativeBase):
 
 @lru_cache
 def get_engine() -> Engine:
-    database_url = get_settings().database_url
+    database_url = get_settings().effective_database_url
     if not database_url:
         raise RuntimeError("DATABASE_URL is not configured")
     return create_engine(database_url, pool_pre_ping=True)

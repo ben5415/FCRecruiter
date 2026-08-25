@@ -46,7 +46,7 @@ export function SquadPage() {
             <span>{state.data.total} first-team players</span>
             <span>Ordered by overall rating</span>
           </div>
-          <section className="player-grid" aria-label="Manchester United squad">
+          <section className="player-grid" aria-label={`${state.data.club.club_name ?? "Club"} squad`}>
             {state.data.players.map((player) => (
               <PlayerCard key={player.player_id} player={player} />
             ))}
