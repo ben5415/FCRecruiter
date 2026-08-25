@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 
-import { createUser, listClubs, listUsers, setUserActive, setUserClub, type ClubOption } from "../api/admin";
+import { createUser, deleteUser, listClubs, listUsers, setUserActive, setUserClub, type ClubOption } from "../api/admin";
 import type { CurrentUser, Role } from "../api/auth";
 import { useAuth } from "../auth/AuthContext";
 import { ClubPicker } from "../components/ClubPicker";
@@ -39,6 +39,15 @@ export function UserManagementPage() {
     } catch (e) { setError(e instanceof Error ? e.message : "Could not update club"); }
   }
 
+  async function remove(target: CurrentUser) {
+    if (!window.confirm(`Delete account “${target.username}”? This action cannot be undone.`)) return;
+    setError("");
+    try {
+      await deleteUser(target.id, csrfToken!);
+      setUsers((items) => items.filter((item) => item.id !== target.id));
+    } catch (e) { setError(e instanceof Error ? e.message : "Could not delete user"); }
+  }
+
   return <main className="marketplace admin-page">
     <div className="marketplace__header"><div><p className="eyebrow">Administration</p><h1>Accounts</h1></div><p>Create accounts and control application access.</p></div>
     <p className="required-note"><span aria-hidden="true">*</span> Required fields</p>
@@ -57,6 +66,7 @@ export function UserManagementPage() {
       <ClubPicker label={`Club for ${user.username}`} clubs={clubs} value={user.managed_club_team_id} onChange={(clubId) => void changeClub(user, clubId)} />
       <span className={user.is_active ? "status-active" : "status-disabled"}>{user.is_active ? "Active" : "Disabled"}</span>
       <button className="button--secondary" disabled={user.id === currentUser?.id} onClick={() => toggle(user)}>{user.is_active ? "Disable" : "Enable"}</button>
+      <button className="button--danger" disabled={user.id === currentUser?.id} onClick={() => void remove(user)}>Delete</button>
     </article>)}</div>
   </main>;
 }

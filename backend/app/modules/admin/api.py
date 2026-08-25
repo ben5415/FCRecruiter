@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.modules.admin.schemas import ClubListResponse, ClubOption, CreateUserRequest, UpdateUserRequest, UserListResponse
 from app.modules.auth.dependencies import AuthContext, require_admin, require_csrf
 from app.modules.auth.models import User, UserSession
-from app.modules.auth.schemas import UserResponse
+from app.modules.auth.schemas import MessageResponse, UserResponse
 from app.modules.auth.security import hash_password, normalize_identifier
 from app.modules.players.models import Club
 from app.shared.database import get_db_session
@@ -106,3 +106,23 @@ async def update_user(
     db.commit()
     db.refresh(user)
     return UserResponse.model_validate(user)
+
+
+@router.delete("/users/{user_id}", response_model=MessageResponse)
+async def delete_user(
+    user_id: int,
+    _: Annotated[AuthContext, Depends(require_csrf)],
+    admin: Annotated[User, Depends(require_admin)],
+    db: Annotated[Session, Depends(get_db_session)],
+) -> MessageResponse:
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    if user.id == admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot delete your own account",
+        )
+    db.delete(user)
+    db.commit()
+    return MessageResponse(message="User deleted")

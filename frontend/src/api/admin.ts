@@ -53,3 +53,10 @@ export function setUserClub(id: number, clubId: number, csrfToken: string): Prom
     body: JSON.stringify({ managed_club_team_id: clubId }),
   });
 }
+
+export function deleteUser(id: number, csrfToken: string): Promise<{ message: string }> {
+  return request(`/api/admin/users/${id}`, {
+    method: "DELETE",
+    headers: { "X-CSRF-Token": csrfToken },
+  });
+}

@@ -8,6 +8,8 @@ button:hover:not(:disabled) { border-color: var(--united-red-dark); background: 
 button:disabled { cursor: not-allowed; opacity: .45; }
 .button--secondary { color: var(--united-black); border-color: #cbc5be; background: white; }
 .button--secondary:hover:not(:disabled) { color: var(--united-red-dark); border-color: var(--united-red); background: #fff4f1; }
+.button--danger { color: #a02219; border-color: #dfaaa5; background: white; }
+.button--danger:hover:not(:disabled) { color: white; border-color: #a02219; background: #a02219; }
 .app-layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); min-height: 100vh; color: var(--united-black); background: radial-gradient(circle at 92% 5%, color-mix(in srgb, var(--united-red) 9%, transparent), transparent 24%), var(--canvas); }
 .app-layout--collapsed { grid-template-columns: 76px minmax(0, 1fr); }
 .app-content { min-width: 0; }
@@ -31,6 +33,7 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .app-layout[data-theme="club-112540"] { --united-red:#e60012;--united-red-dark:#a6000d;--united-yellow:#ffd100;--canvas:#f7f1f1; }
 .app-layout[data-theme="club-110955"] { --united-red:#005bac;--united-red-dark:#003b72;--united-yellow:#e60012;--on-accent:#fff;--canvas:#f0f4f8; }
 .app-layout[data-theme="club-111768"] { --united-red:#00a650;--united-red-dark:#00743a;--united-yellow:#f5e500;--canvas:#f0f7f3; }
+.app-layout[data-theme="club-112893"] { --united-red:#f7b5cd;--united-red-dark:#d77f9f;--united-yellow:#231f20;--on-primary:#231f20;--on-accent:#fff;--canvas:#faf2f5; }
 .sidebar { position: sticky; z-index: 10; top: 0; display: flex; flex-direction: column; height: 100vh; padding: 28px 18px 20px; border-right: 3px solid var(--united-red); color: white; background: rgb(23 23 23 / 97%); backdrop-filter: blur(14px); }
 .app-layout, .sidebar { transition: grid-template-columns 180ms ease, padding 180ms ease; }
 .sidebar-header { display: flex; align-items: flex-start; gap: 6px; }
@@ -71,7 +74,7 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .account-form input, .account-form select { width: 100%; min-width: 0; }
 .account-form > button { grid-column: 3; justify-self: end; min-width: 180px; }
 .account-list { display: grid; gap: 10px; margin-top: 24px; }
-.account-row { display: grid; grid-template-columns: 1fr minmax(180px, 280px) auto auto; align-items: center; gap: 20px; padding: 16px 18px; border: 1px solid var(--border); border-radius: 12px; background: white; }
+.account-row { display: grid; grid-template-columns: 1fr minmax(180px, 280px) auto auto auto; align-items: center; gap: 14px; padding: 16px 18px; border: 1px solid var(--border); border-radius: 12px; background: white; }
 .account-row select, .account-row input { min-height: 40px; min-width: 0; padding: 0 10px; border: 1px solid #cbc5be; border-radius: 9px; background: white; }
 .club-picker { position: relative; min-width: 0; }
 .club-picker__control { display: grid; grid-template-columns: minmax(0, 1fr) 38px; }
@@ -143,4 +146,4 @@ h1 { margin-bottom: 0; font-size: clamp(2.4rem, 6vw, 5rem); letter-spacing: -.06
 @media (max-width: 1050px) { .account-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } .account-form > button { grid-column: 2; } }
 @media (max-width: 700px) { .pagination { align-items: stretch; } .pagination > button { padding-inline: 12px; } }
 @media (max-width: 700px) { .app-layout, .app-layout.app-layout--collapsed { grid-template-columns: 76px minmax(0, 1fr); } .sidebar { padding: 22px 10px 16px; } .brand { justify-content: center; min-height: 58px; padding-inline: 0; } .brand span, .nav-links a span, .nav-user { display: none; } .nav-links a { display: grid; min-height: 44px; padding: 0; place-items: center; font-size: 0; } .nav-links a::after { content: attr(data-short); font-size: .82rem; } .account-menu { padding: 14px 0 0; } .nav-logout { padding: 0; font-size: 0; } .nav-logout::after { content: "Exit"; font-size: .7rem; } }
-@media (max-width: 520px) { .marketplace { padding-inline: 14px; } .filters, .player-grid, .account-form { grid-template-columns: 1fr; } .account-form > button { grid-column: 1; width: 100%; } .account-row { grid-template-columns: 1fr auto; }.account-row button { grid-column: 1 / -1; } .pagination { flex-wrap: wrap; } .pagination__pages { order: -1; width: 100%; justify-content: center; } }
+@media (max-width: 520px) { .marketplace { padding-inline: 14px; } .filters, .player-grid, .account-form { grid-template-columns: 1fr; } .account-form > button { grid-column: 1; width: 100%; } .account-row { grid-template-columns: 1fr auto; }.account-row > button { grid-column: 1 / -1; } .pagination { flex-wrap: wrap; } .pagination__pages { order: -1; width: 100%; justify-content: center; } }

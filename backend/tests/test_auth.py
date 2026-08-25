@@ -54,6 +54,15 @@ def test_roles_and_admin_user_management() -> None:
             )
             assert changed.status_code == 200
             assert changed.json()["managed_club"]["club_name"] == "Real Madrid"
+            cannot_delete_self = await client.delete(
+                "/api/admin/users/1", headers={"X-CSRF-Token": csrf}
+            )
+            assert cannot_delete_self.status_code == 400
+            deleted = await client.delete(
+                "/api/admin/users/2", headers={"X-CSRF-Token": csrf}
+            )
+            assert deleted.status_code == 200
+            assert len((await client.get("/api/admin/users")).json()["items"]) == 2
             logout = await client.post(
                 "/api/auth/logout",
                 headers={"X-CSRF-Token": csrf, "Origin": "http://127.0.0.1:5173"},
