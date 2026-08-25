@@ -4,6 +4,7 @@ import { createUser, listClubs, listUsers, setUserActive, setUserClub, type Club
 import type { CurrentUser, Role } from "../api/auth";
 import { useAuth } from "../auth/AuthContext";
 import { ClubPicker } from "../components/ClubPicker";
+import { RolePicker } from "../components/RolePicker";
 
 export function UserManagementPage() {
   const { user: currentUser, csrfToken } = useAuth();
@@ -40,13 +41,14 @@ export function UserManagementPage() {
 
   return <main className="marketplace admin-page">
     <div className="marketplace__header"><div><p className="eyebrow">Administration</p><h1>Accounts</h1></div><p>Create accounts and control application access.</p></div>
+    <p className="required-note"><span aria-hidden="true">*</span> Required fields</p>
     <form className="account-form" onSubmit={submit}>
-      <label>Username<input required minLength={3} value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} /></label>
+      <label><span>Username <span className="required-mark" aria-hidden="true">*</span></span><input required minLength={3} value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} /></label>
       <label>Display name<input value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} /></label>
       <label>Email<input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
-      <label>Password<input required minLength={8} type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></label>
-      <label>Role<select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })}><option value="user">User</option><option value="admin">Admin</option></select></label>
-      <label>Club<ClubPicker required label="Club for new account" clubs={clubs} value={form.managed_club_team_id} onChange={(clubId) => setForm({ ...form, managed_club_team_id: clubId })} /></label>
+      <label><span>Password <span className="required-mark" aria-hidden="true">*</span></span><input required minLength={8} type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></label>
+      <label>Role<RolePicker value={form.role} onChange={(role) => setForm({ ...form, role })} /></label>
+      <label><span>Club <span className="required-mark" aria-hidden="true">*</span></span><ClubPicker required label="Club for new account" clubs={clubs} value={form.managed_club_team_id} onChange={(clubId) => setForm({ ...form, managed_club_team_id: clubId })} /></label>
       <button>Create account</button>
     </form>
     {error && <p className="form-error">{error}</p>}

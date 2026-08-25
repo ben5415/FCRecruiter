@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import type { ClubOption } from "../api/admin";
+import { normalizeSearch } from "../utils/normalizeSearch";
 
 interface ClubPickerProps {
   clubs: ClubOption[];
@@ -14,8 +15,9 @@ export function ClubPicker({ clubs, value, onChange, label, required = false }: 
   const selectedName = clubs.find((club) => club.club_team_id === value)?.club_name ?? "";
   const [query, setQuery] = useState(selectedName);
   const [open, setOpen] = useState(false);
+  const normalizedQuery = normalizeSearch(query);
   const filteredClubs = clubs.filter((club) =>
-    club.club_name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()),
+    normalizeSearch(club.club_name).includes(normalizedQuery),
   );
 
   useEffect(() => setQuery(selectedName), [selectedName]);
@@ -48,11 +50,15 @@ export function ClubPicker({ clubs, value, onChange, label, required = false }: 
       />
       <button
         aria-label={`Show ${label} options`}
-        className="club-picker__toggle"
+        className={open ? "club-picker__toggle club-picker__toggle--open" : "club-picker__toggle"}
         type="button"
         onMouseDown={(event) => event.preventDefault()}
         onClick={() => setOpen((current) => !current)}
-      >⌄</button>
+      >
+        <svg aria-hidden="true" viewBox="0 0 20 20">
+          <path d="m5 7.5 5 5 5-5" />
+        </svg>
+      </button>
     </div>
     {open && <div className="club-picker__menu" role="listbox">
       {filteredClubs.length > 0 ? filteredClubs.map((club) =>

@@ -4,6 +4,7 @@ const PRESET_CLUB_IDS = new Set([
   240, 241, 243,                // La Liga
   73,                            // Ligue 1
   44, 45, 47,                   // Serie A
+  111768, 112540, 110955,        // Chinese Super League
 ]);
 
 export function getTeamTheme(clubId: number | undefined): string {
