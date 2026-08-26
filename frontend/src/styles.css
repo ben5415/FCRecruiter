@@ -173,6 +173,10 @@ h1 { margin-bottom: 0; font-size: clamp(2.4rem, 6vw, 5rem); letter-spacing: -.06
 .pagination__number--current { color: var(--united-black); border-color: var(--united-yellow); background: var(--united-yellow); }
 .pagination__number--current:hover { color: var(--united-black); border-color: var(--united-yellow); background: var(--united-yellow); }
 .pagination__ellipsis { min-width: 28px; text-align: center; color: #6d766f; font-weight: 800; }
+.pagination__jump { display: flex; align-items: center; gap: 6px; margin-left: 6px; }
+.pagination__jump label { display: flex; align-items: center; gap: 6px; font-size: .8rem; font-weight: 750; }
+.pagination__jump input { width: 72px; min-height: 40px; padding: 7px 9px; text-align: center; }
+.pagination__jump button { min-height: 40px; padding-inline: 14px; }
 .page-message { margin-top: 28px; padding: 64px 24px; border: 1px dashed #cbc5be; border-radius: 16px; color: var(--muted); text-align: center; background: rgb(255 255 255 / 65%); }
 .page-message--error { color: #872d2d; border-color: #e0b4b4; background: #fcede9; }
 .player-detail__back { margin-bottom: 24px; }

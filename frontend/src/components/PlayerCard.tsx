@@ -30,6 +30,16 @@ function positionGroup(positions: string | null): string {
   return "unknown";
 }
 
+function hasTextSelectionWithin(element: HTMLElement): boolean {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed || selection.toString().length === 0) return false;
+
+  return (
+    (selection.anchorNode !== null && element.contains(selection.anchorNode)) ||
+    (selection.focusNode !== null && element.contains(selection.focusNode))
+  );
+}
+
 export function PlayerCard({ player }: { player: PlayerListItem }) {
   const navigate = useNavigate();
   const [imageFailed, setImageFailed] = useState(false);
@@ -42,7 +52,10 @@ export function PlayerCard({ player }: { player: PlayerListItem }) {
       className="player-card player-card--clickable"
       role="link"
       tabIndex={0}
-      onClick={() => navigate(`/players/${player.player_id}`)}
+      onClick={(event) => {
+        if (hasTextSelectionWithin(event.currentTarget)) return;
+        navigate(`/players/${player.player_id}`);
+      }}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();

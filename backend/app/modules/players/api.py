@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.modules.auth.dependencies import get_current_user
 from app.modules.auth.models import User
 from app.modules.players.repository import PlayerRepository
+from app.modules.players.ratings import position_rating_grade, rating_grade
 from app.modules.players.schemas import PlayerDetail, PlayerListItem, PlayerPage
 from app.shared.database import get_db_session
 
@@ -67,6 +68,6 @@ async def get_player_detail(
     }
     return PlayerDetail(
         **base_fields,
-        attributes={group: {field: row[field] for field in fields} for group, fields in ATTRIBUTE_GROUPS.items()},
-        position_ratings={position: row[position] for position in POSITION_RATINGS},
+        attributes={group: {field: rating_grade(row[field]) for field in fields} for group, fields in ATTRIBUTE_GROUPS.items()},
+        position_ratings={position: position_rating_grade(row[position]) for position in POSITION_RATINGS},
     )

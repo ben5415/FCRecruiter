@@ -1,10 +1,12 @@
+export type RatingGrade = "D" | "C" | "B" | "A" | "A+";
+
 export type PlayerListItem = {
   player_id: number;
   short_name: string | null;
   long_name: string | null;
   player_positions: string | null;
-  overall: number | null;
-  potential: number | null;
+  overall: RatingGrade | null;
+  potential: RatingGrade | null;
   value_eur: number | null;
   wage_eur: number | null;
   age: number | null;
@@ -24,7 +26,7 @@ export type PlayerPage = {
 
 export interface PlayerDetail {
   player_id: number; short_name: string | null; long_name: string | null;
-  player_positions: string | null; overall: number | null; potential: number | null;
+  player_positions: string | null; overall: RatingGrade | null; potential: RatingGrade | null;
   value_eur: number | null; wage_eur: number | null; release_clause_eur: number | null;
   age: number | null; dob: string | null; height_cm: number | null; weight_kg: number | null;
   preferred_foot: string | null; weak_foot: number | null; skill_moves: number | null;
@@ -33,8 +35,8 @@ export interface PlayerDetail {
   club_name: string | null; league_name: string | null; nationality_name: string | null;
   club_position: string | null; club_jersey_number: number | null; club_loaned_from: string | null;
   club_joined_date: string | null; club_contract_valid_until_year: number | null;
-  attributes: Record<string, Record<string, number | null>>;
-  position_ratings: Record<string, string | null>;
+  attributes: Record<string, Record<string, RatingGrade | null>>;
+  position_ratings: Record<string, RatingGrade | null>;
 }
 
 export async function getPlayerDetail(playerId: number, signal?: AbortSignal): Promise<PlayerDetail> {

@@ -1,4 +1,5 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { getPlayers, type PlayerPage } from "../api/players";
 import { PlayerCard } from "../components/PlayerCard";
@@ -48,13 +49,25 @@ function paginationItems(currentPage: number, totalPages: number): PaginationIte
 }
 
 export function PlayersPage() {
-  const [page, setPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const parsedPage = Number(searchParams.get("page"));
+  const page = Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+  const search = searchParams.get("search") ?? "";
+  const position = searchParams.get("position") ?? "";
   const [pageSize, setPageSize] = useState(() => pageSizeForWidth(window.innerWidth));
-  const [searchDraft, setSearchDraft] = useState("");
-  const [positionDraft, setPositionDraft] = useState("");
-  const [search, setSearch] = useState("");
-  const [position, setPosition] = useState("");
+  const previousPageSize = useRef(pageSize);
+  const [searchDraft, setSearchDraft] = useState(search);
+  const [positionDraft, setPositionDraft] = useState(position);
+  const [pageDraft, setPageDraft] = useState(String(page));
   const [state, setState] = useState<PageState>({ kind: "loading" });
+
+  function updateQuery(nextPage: number, nextSearch = search, nextPosition = position) {
+    const parameters = new URLSearchParams();
+    if (nextPage > 1) parameters.set("page", String(nextPage));
+    if (nextSearch.trim()) parameters.set("search", nextSearch.trim());
+    if (nextPosition.trim()) parameters.set("position", nextPosition.trim());
+    setSearchParams(parameters);
+  }
 
   useEffect(() => {
     function updatePageSize() {
@@ -67,8 +80,17 @@ export function PlayersPage() {
   }, []);
 
   useEffect(() => {
-    setPage(1);
+    if (previousPageSize.current !== pageSize) {
+      previousPageSize.current = pageSize;
+      updateQuery(1);
+    }
   }, [pageSize]);
+
+  useEffect(() => {
+    setSearchDraft(search);
+    setPositionDraft(position);
+    setPageDraft(String(page));
+  }, [page, position, search]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -85,17 +107,23 @@ export function PlayersPage() {
 
   function submitFilters(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setPage(1);
-    setSearch(searchDraft);
-    setPosition(positionDraft);
+    updateQuery(1, searchDraft, positionDraft);
   }
 
   function clearFilters() {
     setSearchDraft("");
     setPositionDraft("");
-    setSearch("");
-    setPosition("");
-    setPage(1);
+    updateQuery(1, "", "");
+  }
+
+  function jumpToPage(event: FormEvent<HTMLFormElement>, totalPages: number) {
+    event.preventDefault();
+    const requestedPage = Number(pageDraft);
+    if (!Number.isInteger(requestedPage)) {
+      setPageDraft(String(page));
+      return;
+    }
+    updateQuery(Math.min(Math.max(requestedPage, 1), totalPages));
   }
 
   return (
@@ -138,7 +166,7 @@ export function PlayersPage() {
             {state.data.items.map((player) => <PlayerCard key={player.player_id} player={player} />)}
           </section>
           <nav className="pagination" aria-label="Player pagination">
-            <button className="button--secondary" type="button" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>Previous</button>
+            <button className="button--secondary" type="button" disabled={page <= 1} onClick={() => updateQuery(page - 1)}>Previous</button>
             <div className="pagination__pages">
               {paginationItems(page, state.data.pages).map((item) =>
                 typeof item === "number" ? (
@@ -147,7 +175,7 @@ export function PlayersPage() {
                     type="button"
                     key={item}
                     aria-current={item === page ? "page" : undefined}
-                    onClick={() => setPage(item)}
+                    onClick={() => updateQuery(item)}
                   >
                     {item}
                   </button>
@@ -156,7 +184,11 @@ export function PlayersPage() {
                 ),
               )}
             </div>
-            <button className="button--secondary" type="button" disabled={page >= state.data.pages} onClick={() => setPage((value) => value + 1)}>Next</button>
+            <button className="button--secondary" type="button" disabled={page >= state.data.pages} onClick={() => updateQuery(page + 1)}>Next</button>
+            <form className="pagination__jump" onSubmit={(event) => jumpToPage(event, state.data.pages)}>
+              <label>Page <input aria-label="Page number" type="number" min="1" max={state.data.pages} value={pageDraft} onChange={(event) => setPageDraft(event.target.value)} /></label>
+              <button className="button--secondary" type="submit">Go</button>
+            </form>
           </nav>
         </>
       )}

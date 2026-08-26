@@ -12,7 +12,7 @@ class TeamEventWrite(BaseModel):
     description: str | None = Field(default=None, max_length=4000)
     recovery_days: int | None = Field(default=None, ge=0)
     training_project: str | None = Field(default=None, max_length=200)
-    training_effect: int | None = None
+    training_effect: int | None = Field(default=None, ge=0, le=10)
 
 
 class CreateTeamEventRequest(TeamEventWrite):

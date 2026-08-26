@@ -1,4 +1,6 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.modules.players.ratings import RatingGrade, rating_grade
 
 
 class ClubSummary(BaseModel):
@@ -19,8 +21,8 @@ class PlayerListItem(BaseModel):
     short_name: str | None
     long_name: str | None
     player_positions: str | None
-    overall: int | None
-    potential: int | None
+    overall: RatingGrade | None
+    potential: RatingGrade | None
     value_eur: int | None
     wage_eur: int | None
     age: int | None
@@ -28,6 +30,13 @@ class PlayerListItem(BaseModel):
     player_face_url: str | None
     club: ClubSummary | None
     country: CountrySummary | None
+
+    @field_validator("overall", "potential", mode="before")
+    @classmethod
+    def hide_numeric_rating(cls, value: object) -> object:
+        if isinstance(value, (int, float)):
+            return rating_grade(value)
+        return value
 
 
 class PlayerPage(BaseModel):
@@ -43,8 +52,8 @@ class PlayerDetail(BaseModel):
     short_name: str | None
     long_name: str | None
     player_positions: str | None
-    overall: int | None
-    potential: int | None
+    overall: RatingGrade | None
+    potential: RatingGrade | None
     value_eur: int | None
     wage_eur: int | None
     release_clause_eur: float | None
@@ -68,5 +77,12 @@ class PlayerDetail(BaseModel):
     club_loaned_from: str | None
     club_joined_date: str | None
     club_contract_valid_until_year: float | None
-    attributes: dict[str, dict[str, int | float | None]]
-    position_ratings: dict[str, str | None]
+    attributes: dict[str, dict[str, RatingGrade | None]]
+    position_ratings: dict[str, RatingGrade | None]
+
+    @field_validator("overall", "potential", mode="before")
+    @classmethod
+    def hide_numeric_rating(cls, value: object) -> object:
+        if isinstance(value, (int, float)):
+            return rating_grade(value)
+        return value

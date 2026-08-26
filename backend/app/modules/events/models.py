@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 from enum import Enum as PythonEnum
 
-from sqlalchemy import BigInteger, Date, DateTime, Enum, ForeignKey, Integer, String, Text, func
+from sqlalchemy import BigInteger, CheckConstraint, Date, DateTime, Enum, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.modules.auth.models import User
@@ -19,6 +19,12 @@ class TeamEventType(str, PythonEnum):
 
 class TeamEvent(Base):
     __tablename__ = "team_events"
+    __table_args__ = (
+        CheckConstraint(
+            "training_effect IS NULL OR training_effect BETWEEN 0 AND 10",
+            name="ck_team_events_training_effect_range",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(
         BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True

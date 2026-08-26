@@ -66,6 +66,18 @@ def test_event_permissions_and_tenant_isolation() -> None:
             training = await coach.post("/api/events", headers={"X-CSRF-Token": csrf}, json={"event_type": "training", "player_id": 10, "event_date": "2026-08-26", "training_project": "Pressing", "training_effect": 8})
             assert training.status_code == 201
             assert (await coach.patch(f"/api/events/{training.json()['id']}", headers={"X-CSRF-Token": csrf}, json={"training_effect": 9})).json()["training_effect"] == 9
+            below_range = await coach.patch(
+                f"/api/events/{training.json()['id']}",
+                headers={"X-CSRF-Token": csrf},
+                json={"training_effect": -1},
+            )
+            above_range = await coach.patch(
+                f"/api/events/{training.json()['id']}",
+                headers={"X-CSRF-Token": csrf},
+                json={"training_effect": 11},
+            )
+            assert below_range.status_code == 422
+            assert above_range.status_code == 422
 
         async with AsyncClient(transport=transport, base_url="http://testserver") as player:
             csrf = await login(player, "player")
