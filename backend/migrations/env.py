@@ -6,6 +6,7 @@ from sqlalchemy import engine_from_config, pool
 from app.config import get_settings
 from app.modules.auth import models as auth_models  # noqa: F401
 from app.modules.players import models as player_models  # noqa: F401
+from app.modules.tactics import models as tactic_models  # noqa: F401
 from app.shared.database import Base
 
 

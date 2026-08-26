@@ -9,6 +9,7 @@ import { PlayersPage } from "./pages/PlayersPage";
 import { SquadPage } from "./pages/SquadPage";
 import { EventsPage } from "./pages/EventsPage";
 import { PlayerDetailPage } from "./pages/PlayerDetailPage";
+import { TacticsPage } from "./pages/TacticsPage";
 import "./styles.css";
 
 function App() {
@@ -17,7 +18,7 @@ function App() {
       <AuthProvider><Routes>
         <Route path="login" element={<LoginPage />} />
         <Route element={<ProtectedRoute />}><Route element={<AppShell />}>
-          <Route index element={<Navigate replace to="/squad" />} /><Route path="squad" element={<SquadPage />} /><Route path="marketplace" element={<PlayersPage />} /><Route path="players/:playerId" element={<PlayerDetailPage />} /><Route path="events" element={<EventsPage />} />
+          <Route index element={<Navigate replace to="/squad" />} /><Route path="squad" element={<SquadPage />} /><Route path="marketplace" element={<PlayersPage />} /><Route path="players/:playerId" element={<PlayerDetailPage />} /><Route path="events" element={<EventsPage />} /><Route path="tactics" element={<TacticsPage />} />
           <Route element={<ProtectedRoute managerOnly />}><Route path="admin/users" element={<UserManagementPage />} /></Route>
         </Route></Route>
       </Routes></AuthProvider>
