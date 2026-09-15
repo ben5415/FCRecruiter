@@ -3,12 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.modules.health.api import router as health_router
+from app.modules.knowledge.api import router as knowledge_router
+from app.modules.recruitment.api import router as recruitment_router
 from app.modules.auth.api import router as auth_router
 from app.modules.admin.api import router as admin_router
 from app.modules.players.api import router as players_router
 from app.modules.team.api import router as team_router
 from app.modules.events.api import router as events_router
 from app.modules.tactics.api import router as tactics_router
+from app.modules.agent_tools.api import router as agent_tools_router
+from app.modules.agent_settings.api import router as agent_settings_router
 
 
 def create_app() -> FastAPI:
@@ -35,6 +39,10 @@ def create_app() -> FastAPI:
     app.include_router(team_router, prefix=settings.api_prefix)
     app.include_router(events_router, prefix=settings.api_prefix)
     app.include_router(tactics_router, prefix=settings.api_prefix)
+    app.include_router(agent_tools_router, prefix=settings.api_prefix)
+    app.include_router(knowledge_router, prefix=settings.api_prefix)
+    app.include_router(recruitment_router, prefix=settings.api_prefix)
+    app.include_router(agent_settings_router, prefix=settings.api_prefix)
     return app
 
 

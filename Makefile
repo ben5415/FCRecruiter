@@ -6,7 +6,7 @@ PIP := $(PYTHON) -m pip
 BACKEND_APP := app.main:app
 AGENT_APP := agent_service.app.main:app
 
-.PHONY: help setup setup-db migrate tenant create-multitenant-db install install-backend install-agent install-frontend \
+.PHONY: help setup setup-db migrate migrate-agent knowledge evaluate-agent tenant create-multitenant-db install install-backend install-agent install-frontend \
 	dev dev-backend dev-agent dev-frontend test test-backend test-agent build build-frontend
 
 help:
@@ -14,6 +14,9 @@ help:
 	@echo "  make setup          Create .venv and install Python/npm dependencies"
 	@echo "  make setup-db       Enable required PostgreSQL extensions"
 	@echo "  make migrate        Apply database schema migrations"
+	@echo "  make migrate-agent  Apply Agent Service database migrations"
+	@echo "  make knowledge ARGS='path/to/file.md'  Import football knowledge"
+	@echo "  make evaluate-agent ARGS='--limit 100'  Evaluate saved Agent runs"
 	@echo "  make tenant ARGS='list'  Manage tenants through the server-side CLI"
 	@echo "  make create-multitenant-db  Clone the current DB and apply tenant migration"
 	@echo "  make dev-backend    Start FastAPI on http://localhost:8000"
@@ -45,6 +48,15 @@ setup-db:
 
 migrate:
 	PYTHONPATH=backend $(PYTHON) -m alembic upgrade head
+
+migrate-agent:
+	PYTHONPATH=. $(PYTHON) -m alembic -c agent_service/alembic.ini upgrade head
+
+knowledge:
+	PYTHONPATH=. $(PYTHON) scripts/import_football_knowledge.py $(ARGS)
+
+evaluate-agent:
+	PYTHONPATH=. $(PYTHON) scripts/evaluate_agent_runs.py $(ARGS)
 
 tenant:
 	PYTHONPATH=backend $(PYTHON) scripts/manage_tenants.py $(ARGS)

@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FCRecruiter 足球知识 RAG 与循证推荐设计</title>
+  <style>
+    :root {
+      --bg: #f3f1ec; --paper: #fffdf8; --ink: #202621; --muted: #68716a;
+      --line: #d9d8d0; --green: #16533d; --green2: #257158;
+      --soft: #e6f1eb; --gold: #b17b20; --goldsoft: #fbf1dc;
+      --red: #a23b32; --redsoft: #faebe8; --code: #15221c; --codeink: #e7f3ec;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; color: var(--ink); line-height: 1.72;
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      background: radial-gradient(circle at 95% 0%, rgba(37,113,88,.13), transparent 30rem), var(--bg);
+    }
+    .layout { display: grid; grid-template-columns: 270px minmax(0, 920px); gap: 40px; max-width: 1280px; margin: auto; padding: 34px 26px 90px; }
+    nav { position: sticky; top: 22px; align-self: start; padding: 22px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,253,248,.94); box-shadow: 0 12px 35px rgba(30,40,34,.06); }
+    nav strong { display: block; margin-bottom: 12px; color: var(--green); letter-spacing: .08em; }
+    nav a { display: block; padding: 7px 0; color: var(--muted); text-decoration: none; font-size: 14px; }
+    nav a:hover { color: var(--green); }
+    main { min-width: 0; }
+    header { padding: 50px 48px; color: white; border-radius: 22px; background: linear-gradient(135deg,#113c2e,#1b634a 68%,#328064); box-shadow: 0 20px 45px rgba(22,83,61,.2); }
+    .eyebrow { margin: 0 0 10px; color: #cde4d8; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 0; max-width: 800px; font-size: clamp(34px,6vw,58px); line-height: 1.08; letter-spacing: -.04em; }
+    header p { max-width: 760px; margin: 22px 0 0; color: #e0eee7; font-size: 18px; }
+    section { margin-top: 32px; padding: 34px 38px; border: 1px solid var(--line); border-radius: 18px; background: var(--paper); }
+    h2,h3 { line-height: 1.25; } h2 { margin: 0 0 18px; font-size: 29px; } h3 { margin: 28px 0 10px; color: var(--green); font-size: 20px; }
+    p { margin: 10px 0; } a { color: var(--green); }
+    code { padding: .12em .36em; border-radius: 5px; color: #154b39; background: var(--soft); font-family: "SFMono-Regular",Consolas,monospace; font-size: .91em; }
+    pre { overflow-x: auto; margin: 16px 0; padding: 20px; border-radius: 12px; color: var(--codeink); background: var(--code); line-height: 1.58; }
+    pre code { padding: 0; color: inherit; background: transparent; }
+    table { width: 100%; margin: 18px 0; border-collapse: collapse; font-size: 15px; }
+    th,td { padding: 12px 13px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--green); background: var(--soft); }
+    .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin: 20px 0; }
+    .flow span { padding: 10px 13px; border: 1px solid #bad0c4; border-radius: 9px; background: var(--soft); font-weight: 680; }
+    .flow i { color: var(--gold); font-style: normal; font-weight: 900; }
+    .callout { margin: 18px 0; padding: 16px 18px; border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; background: var(--goldsoft); }
+    .warning { border-left-color: var(--red); background: var(--redsoft); }
+    .good { border-left-color: var(--green); background: var(--soft); }
+    .cards { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; margin: 18px 0; }
+    .card { padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: #faf9f5; }
+    .card strong { display: block; margin-bottom: 6px; color: var(--green); }
+    .tree { white-space: pre; overflow-x: auto; font-family: "SFMono-Regular",Consolas,monospace; font-size: 14px; line-height: 1.65; }
+    .small { color: var(--muted); font-size: 14px; }
+    @media(max-width:880px){.layout{display:block;padding:18px 14px 60px}nav{position:static;margin-bottom:20px}nav a{display:inline-block;margin-right:14px}header{padding:36px 26px}section{padding:27px 22px}.cards{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="layout">
+  <nav aria-label="文档目录">
+    <strong>FCRECRUITER / RAG</strong>
+    <a href="#goal">1. 目标与边界</a>
+    <a href="#concept">2. RAG 是什么</a>
+    <a href="#architecture">3. 总体架构</a>
+    <a href="#map">4. 代码地图</a>
+    <a href="#storage">5. 文档与片段模型</a>
+    <a href="#ingest">6. 知识入库</a>
+    <a href="#retrieve">7. pgvector 检索</a>
+    <a href="#tools">8. 两类 Tool 如何配合</a>
+    <a href="#evidence">9. Evidence 来源链</a>
+    <a href="#report">10. 报告生成流程</a>
+    <a href="#tenant">11. 租户隔离</a>
+    <a href="#config">12. 配置与运行</a>
+    <a href="#tests">13. 测试与评测</a>
+    <a href="#limits">14. 当前限制</a>
+    <a href="#reading">15. 阅读顺序</a>
+  </nav>
+
+  <main>
+    <header>
+      <p class="eyebrow">PostgreSQL + pgvector + typed tools</p>
+      <h1>足球知识 RAG 与循证引援推荐</h1>
+      <p>把“数据库里的球员事实”和“足球领域知识”分开检索，再让 LLM 负责解释和综合；每个诊断、补强需求与候选推荐都保留可追踪的 Evidence。</p>
+    </header>
+
+    <section id="goal">
+      <h2>1. 目标与边界</h2>
+      <p>这个模块要回答两类不同问题：</p>
+      <div class="cards">
+        <div class="card"><strong>业务事实</strong>本队有哪些球员？当前战术是什么？谁受伤？哪些候选符合年龄和预算？</div>
+        <div class="card"><strong>领域知识</strong>高位逼抢需要什么能力？内切边锋承担什么职责？阵型宽度不足通常如何补强？</div>
+      </div>
+      <p>业务事实来自 Backend 的结构化数据和确定性查询；领域知识来自 Agent 数据库里的知识片段。LLM 不能把知识库内容当作球员真实属性，也不能把自己的常识伪装成已检索证据。</p>
+      <div class="callout good"><strong>核心原则：</strong>确定性代码找事实和候选，向量检索找相关知识，LLM 只负责把两者组织成可读、带依据的建议。</div>
+    </section>
+
+    <section id="concept">
+      <h2>2. 新手先理解：RAG 是什么？</h2>
+      <p>RAG 是 Retrieval-Augmented Generation，即“检索增强生成”。它不是训练模型，而是在调用模型前先查找相关资料，再把资料作为 Tool 结果交给模型。</p>
+      <div class="flow"><span>用户问题</span><i>→</i><span>生成查询向量</span><i>→</i><span>检索相似片段</span><i>→</i><span>LLM 阅读片段</span><i>→</i><span>生成带引用报告</span></div>
+      <h3>2.1 Embedding 是什么？</h3>
+      <p>Embedding 模型把文本转换成一串浮点数。语义相近的文本，其向量方向通常更接近。</p>
+      <pre><code>“高位逼抢对前锋的要求” → [0.12, -0.04, 0.81, ...]
+“压迫型前锋需要哪些能力” → [0.10, -0.02, 0.78, ...]</code></pre>
+      <p>当前数据库固定使用 1024 维向量，默认通过本机 Ollama 使用 <code>bge-m3</code>。文档入库和问题检索必须使用相同模型与维度，否则距离没有意义。</p>
+      <h3>2.2 为什么先切片？</h3>
+      <p>整本战术书作为一个向量过于粗糙，也会一次返回太多文本。系统先把文档切成约 1200 字符的片段，相邻长片段重叠约 150 字符，降低关键句刚好被切断的概率。</p>
+    </section>
+
+    <section id="architecture">
+      <h2>3. 总体架构</h2>
+      <pre><code>知识入库链路
+Markdown / Text
+  → split_text
+  → EmbeddingAdapter.embed_documents
+  → Ollama /api/embed → bge-m3 (本机推理)
+  → knowledge_documents + knowledge_chunks(vector)
+
+在线分析链路
+用户问题
+  → AgentRunner
+  ├─ get_squad / get_tactic / get_injury_events → Backend
+  ├─ search_players                           → Backend 固定筛选
+  └─ search_football_knowledge                → Agent DB / pgvector
+  → LLM 综合解释
+  → RecruitmentReport
+  → Evidence.source_id</code></pre>
+      <p>业务 Backend 仍然是球员、阵容、战术和事件的可信数据边界。知识库只存外部足球资料及其向量，不复制实时业务事实。</p>
+    </section>
+
+    <section id="map">
+      <h2>4. 代码地图</h2>
+      <div class="tree">agent_service/app/
+├── knowledge/
+│   ├── models.py       # KnowledgeDocument、KnowledgeChunk、Vector(1024)
+│   ├── schemas.py      # 入库、SearchHit、SearchResult
+│   ├── embeddings.py   # EmbeddingAdapter、Ollama 与兼容 HTTP 实现
+│   ├── repository.py   # 固定 pgvector 余弦查询
+│   └── service.py      # 切片、去重、Embedding、检索编排
+├── recruitment/
+│   ├── tools.py        # search_football_knowledge Tool
+│   ├── tool_schemas.py # Tool 输入和 evidence_source_id
+│   ├── schemas.py      # RecruitmentReport 与 Evidence 校验
+│   ├── prompt.py       # 循证分析规则
+│   └── factory.py      # DeepSeek + ToolRegistry + AgentRunner 装配
+└── migrations/versions/
+    ├── 20260910_0002_knowledge_vectors.py
+    └── 20260912_0003_ollama_bge_m3.py
+
+scripts/
+└── import_football_knowledge.py # 导入知识文件</div>
+    </section>
+
+    <section id="storage">
+      <h2>5. 文档与片段如何存储？</h2>
+      <h3>5.1 KnowledgeDocument</h3>
+      <table><thead><tr><th>字段</th><th>含义</th></tr></thead><tbody>
+        <tr><td><code>tenant_scope</code></td><td>0 表示所有租户可见；正整数表示某租户私有。</td></tr>
+        <tr><td><code>title</code></td><td>资料标题。</td></tr>
+        <tr><td><code>source_uri</code></td><td>原文件或网页来源，用于回溯。</td></tr>
+        <tr><td><code>checksum</code></td><td>规范化正文的 SHA-256，用于避免重复导入。</td></tr>
+        <tr><td><code>document_metadata</code></td><td>作者、发布日期、资料类型等扩展信息。</td></tr>
+      </tbody></table>
+      <h3>5.2 KnowledgeChunk</h3>
+      <table><thead><tr><th>字段</th><th>含义</th></tr></thead><tbody>
+        <tr><td><code>document_id</code></td><td>所属文档。</td></tr>
+        <tr><td><code>chunk_index</code></td><td>片段在文档里的顺序。</td></tr>
+        <tr><td><code>content</code></td><td>交给模型阅读的原始片段。</td></tr>
+        <tr><td><code>token_estimate</code></td><td>粗略 Token 数，用于未来上下文预算。</td></tr>
+        <tr><td><code>embedding</code></td><td>1024 维 pgvector 向量。</td></tr>
+      </tbody></table>
+      <p>片段 ID 使用 UUID，并直接参与 Evidence：<code>knowledge:&lt;chunk UUID&gt;</code>。</p>
+    </section>
+
+    <section id="ingest">
+      <h2>6. 一份知识文件如何入库？</h2>
+      <ol>
+        <li>读取 UTF-8 Markdown 或 Text 文件。</li>
+        <li>清理首尾空白并计算 SHA-256。</li>
+        <li>按来源、校验和与租户检查是否已导入。</li>
+        <li>按段落优先切片，超长段落使用重叠字符窗口。</li>
+        <li>批量调用本机 Ollama Embedding API。</li>
+        <li>检查返回数量和每个向量的维度。</li>
+        <li>再次检查重复，避免 Embedding 期间发生并发重复导入。</li>
+        <li>在一个数据库事务中写入文档与全部片段。</li>
+      </ol>
+      <pre><code># 导入所有租户共享的知识
+make knowledge ARGS='knowledge/inverted_winger.md'
+
+# 导入租户 15 的私有资料
+make knowledge ARGS='club_notes.md --tenant-id 15 --title "Club Scouting Model"'</code></pre>
+      <div class="callout">重复导入相同来源和相同内容不会再次生成数据库记录；脚本会报告 <code>already exists</code>。</div>
+    </section>
+
+    <section id="retrieve">
+      <h2>7. pgvector 检索如何工作？</h2>
+      <p>问题先经过同一个 EmbeddingAdapter 得到查询向量。Repository 使用固定的余弦距离表达式：</p>
+      <pre><code>distance = KnowledgeChunk.embedding.cosine_distance(query_embedding)
+similarity = 1.0 - distance
+
+WHERE document.tenant_scope = 0
+   OR document.tenant_scope = current_tenant
+ORDER BY distance
+LIMIT :limit</code></pre>
+      <p>系统还会过滤低于 <code>min_similarity</code> 的结果。每个 SearchHit 返回标题、来源 URI、原文片段、相似度、片段顺序和 Evidence ID。</p>
+      <h3>7.1 HNSW 索引</h3>
+      <p>迁移为 embedding 建立 HNSW 余弦索引。它是一种近似最近邻索引，适合从大量向量中快速找到相似项。当前小数据集即使顺序扫描也能工作，但提前建立索引让结构可以扩展。</p>
+      <div class="callout warning"><strong>相似不等于正确。</strong>向量检索只表示文本语义相关，不证明资料可靠，也不保证片段真的回答了问题。最终报告仍应标记不确定性，并保留来源。</div>
+    </section>
+
+    <section id="tools">
+      <h2>8. 确定性候选筛选与知识 Tool 如何配合？</h2>
+      <table><thead><tr><th>Tool</th><th>回答的问题</th><th>不能回答什么</th></tr></thead><tbody>
+        <tr><td><code>search_players</code></td><td>哪些真实球员满足位置、年龄、预算、惯用脚和等级条件？</td><td>为什么这种球员适合某种战术。</td></tr>
+        <tr><td><code>search_football_knowledge</code></td><td>相关战术角色和招募原则是什么？</td><td>某个球员实际拥有哪些未提供的属性。</td></tr>
+      </tbody></table>
+      <pre><code>错误：知识说“内切边锋通常需要左脚”
+      → 推断候选 A 一定是左脚
+
+正确：search_players 明确返回候选 A preferred_foot=Left
+      + 知识片段解释左脚右边锋的战术作用
+      → 形成有两类证据的适配理由</code></pre>
+      <p>因此流程应该先诊断阵容和补强需求，再使用确定性条件缩小候选集，最后用知识解释角色适配与风险。</p>
+    </section>
+
+    <section id="evidence">
+      <h2>9. Evidence 如何保留来源？</h2>
+      <p>各 Tool 返回稳定的 <code>evidence_source_id</code>：</p>
+      <table><thead><tr><th>来源</th><th>ID 格式</th></tr></thead><tbody>
+        <tr><td>当前阵容</td><td><code>squad:current</code></td></tr>
+        <tr><td>当前战术</td><td><code>tactic:current</code></td></tr>
+        <tr><td>球队事件</td><td><code>event:&lt;event_id&gt;</code></td></tr>
+        <tr><td>候选球员</td><td><code>player:&lt;player_id&gt;</code></td></tr>
+        <tr><td>知识片段</td><td><code>knowledge:&lt;chunk UUID&gt;</code></td></tr>
+      </tbody></table>
+      <p>Prompt 要求模型原样复制 ID；Pydantic 会检查 <code>source_type</code> 与 ID 前缀是否匹配。候选推荐还必须包含对应的 <code>player:&lt;player_id&gt;</code>，否则整份报告校验失败并进入降级结果。</p>
+      <pre><code>{
+  "source_type": "knowledge",
+  "source_id": "knowledge:7b8c...",
+  "description": "Inverted winger role principles"
+}</code></pre>
+      <div class="callout good">Evidence 保存的是“这条结论依据了哪个数据对象或知识片段”，不是模型的隐藏思维过程。前端以后可以根据 source_id 提供跳转或展开原文。</div>
+    </section>
+
+    <section id="report">
+      <h2>10. 阵容诊断到推荐报告的完整流程</h2>
+      <ol>
+        <li><code>get_squad</code> 获取当前阵容结构。</li>
+        <li><code>get_current_tactic</code> 获取阵型、打法和备注。</li>
+        <li><code>get_injury_events</code> 获取影响可用性的医疗事实。</li>
+        <li>LLM 基于这些事实提出一个或多个 <code>RecruitmentNeed</code>。</li>
+        <li><code>search_players</code> 用确定性条件筛选候选。</li>
+        <li><code>search_football_knowledge</code> 检索角色、战术和评估原则。</li>
+        <li>LLM 生成原因、风险、假设和不确定性。</li>
+        <li>Pydantic 验证 <code>RecruitmentReport</code> 与 Evidence。</li>
+      </ol>
+      <pre><code>RecruitmentReport
+├── summary
+├── needs[]
+│   ├── position / priority / reason
+│   └── evidence[]
+├── candidates[]
+│   ├── player_id / fit_grade
+│   ├── reasons[] / risks[]
+│   └── evidence[]  ← 必须有 matching player:id
+├── assumptions[]
+└── uncertainty</code></pre>
+      <p><code>factory.py</code> 使用 DeepSeek、LangChainModelAdapter、五个 Recruitment Tool 和 AgentRunner 完成真实装配。默认最多 6 次模型步骤和 8 次 Tool 调用。</p>
+      <p>业务 Backend 最终调用受服务密钥保护的入口：</p>
+      <pre><code>POST /recruitment/analyse
+X-Agent-Service-Token: ...
+X-Tenant-ID: 15
+X-User-ID: 29
+
+{
+  "question": "诊断当前阵容并推荐一名右边锋"
+}</code></pre>
+      <p>该入口直接使用代码中的 Recruitment Prompt、Tool 白名单和结构化输出 Schema。浏览器不会获得服务密钥，而是通过业务 Backend 的登录态代理接口调用。</p>
+    </section>
+
+    <section id="tenant">
+      <h2>11. 知识检索的租户隔离</h2>
+      <p>知识分为全局与租户私有两类：</p>
+      <pre><code>tenant_scope = 0   → 所有球队都能检索
+tenant_scope = 15  → 只有 tenant 15 能检索</code></pre>
+      <p>模型不能在 Tool 参数中指定 tenant_id。Tool Handler 从可信 <code>AgentRunContext</code> 读取当前租户，然后 Repository 强制添加可见性条件。</p>
+      <div class="callout warning">Agent 数据库没有业务 Tenant 外键，因为它和 Backend 是独立数据库。因此 tenant_id 的真实性来自已经认证的服务调用链；检索查询本身仍必须强制加 tenant_scope 条件。</div>
+    </section>
+
+    <section id="config">
+      <h2>12. 配置、迁移与运行</h2>
+      <h3>12.1 准备 Ollama 模型</h3>
+      <pre><code># 下载一次，之后可离线推理
+ollama pull bge-m3
+
+# Linux CLI 安装通常需要显式启动；Ollama Desktop 一般会自动运行服务
+ollama serve
+
+# 验证服务和模型（另开终端）
+curl http://127.0.0.1:11434/api/embed \
+  -d '{"model":"bge-m3","input":"高位逼抢需要什么类型的前锋？"}'</code></pre>
+      <p><code>bge-m3</code> 输出 1024 维向量，支持中英文等多语言检索。首次推理需要将模型载入内存，后续请求通常更快。</p>
+      <div class="callout warning"><strong>WSL 注意：</strong>如果 Ollama 安装在 Windows、Agent Service 运行在 WSL，必须先确认 WSL 能访问 Ollama。无法使用 <code>127.0.0.1:11434</code> 时，应把 <code>OLLAMA_BASE_URL</code> 改为 Windows 主机可访问地址，并配置 Ollama 监听范围。</div>
+      <h3>12.2 系统级 pgvector 扩展</h3>
+      <p>Python 包 <code>pgvector</code> 只提供客户端类型；PostgreSQL 服务器还必须安装扩展。当前 Ubuntu + PostgreSQL 18 可执行：</p>
+      <pre><code>sudo apt-get install -y postgresql-18-pgvector
+make migrate-agent</code></pre>
+      <p>迁移先创建知识表，再把向量列统一为 <code>vector(1024)</code> 并建立 HNSW 余弦索引。更换模型前已有向量必须清空并重新生成，不能把旧模型向量直接转换为新模型向量。</p>
+      <h3>12.3 环境变量</h3>
+      <pre><code>AGENT_DATABASE_URL=postgresql+psycopg://.../fc26_agent
+
+EMBEDDING_BACKEND=ollama
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_EMBEDDING_MODEL=bge-m3
+EMBEDDING_DIMENSIONS=1024
+EMBEDDING_TIMEOUT_SECONDS=20
+KNOWLEDGE_CHUNK_SIZE=1200
+KNOWLEDGE_CHUNK_OVERLAP=150
+
+DEEPSEEK_API_KEY=...
+DEEPSEEK_MODEL=deepseek-chat</code></pre>
+      <p>Agent Service 通过 Ollama 的 <code>/api/embed</code> 接口调用本机模型，不需要在 Python 虚拟环境安装 PyTorch，也不产生按次 API 费用。如果设备首次加载模型超过 20 秒，可以单独调大 <code>EMBEDDING_TIMEOUT_SECONDS</code>。</p>
+      <h3>12.4 请求如何经过 Adapter</h3>
+      <pre><code>KnowledgeService
+  → EmbeddingAdapter（统一接口）
+  → OllamaEmbeddingAdapter
+  → POST {OLLAMA_BASE_URL}/api/embed
+     {"model": "bge-m3", "input": ["片段一", "片段二"]}
+  ← {"embeddings": [[...1024维...], [...1024维...]]}
+  → 校验数量与维度
+  → 写入 pgvector</code></pre>
+      <p>Adapter 只转换协议并验证响应，不负责 SQL、切片或租户判断。因此测试可以注入假的 HTTP Client，未来也能在不改 KnowledgeService 的情况下替换 Provider。</p>
+      <h3>12.5 Agent 配置</h3>
+      <p>当前只有一个 Recruitment Agent。经理可在前端 Agent Settings 注册当前代码中的 Prompt、Tool 白名单和输出 Schema 快照，并启用或禁用版本；分析请求在运行时发现当前启用版本。页面不允许编辑 Prompt 或上传 Tool，因此这里只实现版本治理，不是通用 Agent 平台。</p>
+    </section>
+
+    <section id="tests">
+      <h2>13. 测试与后续评测</h2>
+      <p>当前单元测试不调用真实模型或真实 Ollama 服务：</p>
+      <ul>
+        <li>验证段落切片和长文本重叠。</li>
+        <li>验证 Ollama 请求地址、模型名、批量输入及响应维度。</li>
+        <li>验证兼容 HTTP Provider 的响应排序和维度。</li>
+        <li>验证知识 Tool 使用可信 tenant_id。</li>
+        <li>Fake LLM 依次调用阵容、候选筛选和知识检索。</li>
+        <li>验证 Tool 返回的 Evidence ID 被写入结构化报告。</li>
+        <li>验证缺少匹配球员 Evidence 的候选会被拒绝。</li>
+      </ul>
+      <p>下一阶段评测不应只判断语言是否流畅，还应检查：</p>
+      <table><thead><tr><th>指标</th><th>示例</th></tr></thead><tbody>
+        <tr><td>Retrieval relevance</td><td>返回片段是否真正讨论用户要求的战术角色。</td></tr>
+        <tr><td>Groundedness</td><td>报告中的事实能否在 Tool 结果中找到。</td></tr>
+        <tr><td>Citation validity</td><td>Evidence ID 是否真实存在且类型匹配。</td></tr>
+        <tr><td>Candidate constraint pass rate</td><td>推荐球员是否全部满足确定性筛选条件。</td></tr>
+        <tr><td>Tool selection</td><td>问题是否触发了需要的业务或知识 Tool。</td></tr>
+      </tbody></table>
+    </section>
+
+    <section id="limits">
+      <h2>14. 当前限制与诚实边界</h2>
+      <ul>
+        <li>Embedding 维度固定为 1024，更换不同维度模型需要新迁移和重新向量化。</li>
+        <li>当前切片器按段落和字符处理，尚未理解 Markdown 标题层级。</li>
+        <li>知识来源尚无可信度评级、有效期和人工审核状态。</li>
+        <li>相似度阈值默认 0.25，需要用真实资料和问题校准。</li>
+        <li>Evidence 验证能检查 ID 格式和候选 ID，但不能自动证明自然语言结论完全忠于原文。</li>
+        <li>Embedding 不产生按次 API 费用，但本机推理仍消耗 CPU、内存和时间；LLM 调用成本仍需通过观测数据统计。</li>
+        <li>当前没有 Ollama 自动重试或熔断；服务未启动、模型不存在和请求超时都会作为明确异常返回。</li>
+        <li>尚未提供知识管理 Web 页面；当前通过脚本导入。</li>
+      </ul>
+      <p>这些限制不会破坏核心边界：模型仍不能生成 SQL，候选仍由确定性代码筛选，知识片段仍可定位到数据库记录和原始来源。</p>
+    </section>
+
+    <section id="reading">
+      <h2>15. 新手推荐阅读顺序</h2>
+      <ol>
+        <li>阅读 <code>knowledge/schemas.py</code>，先知道输入和输出长什么样。</li>
+        <li>阅读 <code>knowledge/service.py</code>，理解切片、去重、Embedding 和检索编排。</li>
+        <li>阅读 <code>knowledge/embeddings.py</code>，理解为什么需要 Provider Adapter。</li>
+        <li>阅读 <code>knowledge/models.py</code> 与迁移，理解 vector 列和 HNSW 索引。</li>
+        <li>阅读 <code>knowledge/repository.py</code>，找到余弦距离和 tenant_scope 条件。</li>
+        <li>阅读 <code>recruitment/tools.py</code>，看知识检索如何成为 Agent Tool。</li>
+        <li>阅读 <code>recruitment/prompt.py</code> 和 <code>schemas.py</code>，理解 Prompt 规则与代码校验的区别。</li>
+        <li>最后阅读 <code>test_knowledge_recruitment.py</code>，跟踪完整 Fake Agent Loop。</li>
+      </ol>
+      <p class="small">一句话复述：结构化 Backend Tool 提供球队与球员事实，pgvector Tool 提供相关足球知识，LLM 负责解释，Evidence 把报告重新连接到原始数据和知识片段。</p>
+    </section>
+  </main>
+</div>
+</body>
+</html>

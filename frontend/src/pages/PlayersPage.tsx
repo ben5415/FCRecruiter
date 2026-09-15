@@ -3,6 +3,9 @@ import { useSearchParams } from "react-router-dom";
 
 import { getPlayers, type PlayerPage } from "../api/players";
 import { PlayerCard } from "../components/PlayerCard";
+import { analyseRecruitment, type RecruitmentAnalysisResult } from "../api/recruitment";
+import { useAuth } from "../auth/AuthContext";
+import { RecruitmentReportPanel } from "../components/RecruitmentReportPanel";
 
 
 type PageState =
@@ -49,6 +52,7 @@ function paginationItems(currentPage: number, totalPages: number): PaginationIte
 }
 
 export function PlayersPage() {
+  const { csrfToken } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const parsedPage = Number(searchParams.get("page"));
   const page = Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
@@ -60,6 +64,9 @@ export function PlayersPage() {
   const [positionDraft, setPositionDraft] = useState(position);
   const [pageDraft, setPageDraft] = useState(String(page));
   const [state, setState] = useState<PageState>({ kind: "loading" });
+  const [analysis, setAnalysis] = useState<RecruitmentAnalysisResult | null>(null);
+  const [analysisError, setAnalysisError] = useState("");
+  const [analysing, setAnalysing] = useState(false);
 
   function updateQuery(nextPage: number, nextSearch = search, nextPosition = position) {
     const parameters = new URLSearchParams();
@@ -126,6 +133,16 @@ export function PlayersPage() {
     updateQuery(Math.min(Math.max(requestedPage, 1), totalPages));
   }
 
+  async function analyseSquad() {
+    if (!csrfToken) return;
+    setAnalysing(true); setAnalysisError("");
+    try {
+      setAnalysis(await analyseRecruitment({ question: "Analyse our squad strength and depth by position, consider the current coach's formation and playing style, then produce the most important recruitment need and practical initial marketplace filters." }, csrfToken));
+    } catch (reason) {
+      setAnalysisError(reason instanceof Error ? reason.message : "Could not run recruitment analysis");
+    } finally { setAnalysing(false); }
+  }
+
   return (
     <main className="marketplace">
       <header className="marketplace__header">
@@ -133,8 +150,11 @@ export function PlayersPage() {
           <p className="eyebrow">Recruitment database</p>
           <h1>Player Marketplace</h1>
         </div>
-        <p>Browse the FC26 player pool. Recruitment analysis will be added later.</p>
+        <div className="marketplace-agent-action"><p>Analyse squad gaps before filtering the market.</p><button type="button" onClick={() => void analyseSquad()} disabled={analysing}>{analysing ? "Analysing…" : "Generate recruitment brief"}</button></div>
       </header>
+
+      {analysisError && <p className="form-error" role="alert">{analysisError}</p>}
+      {analysis && <RecruitmentReportPanel result={analysis} onApplyFilters={(nextPosition) => { setPositionDraft(nextPosition); updateQuery(1, "", nextPosition); }} />}
 
       <form className="filters" onSubmit={submitFilters}>
         <label>Player name

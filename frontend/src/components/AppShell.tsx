@@ -48,6 +48,8 @@ export function AppShell() {
             <NavLink data-short="M" to="/marketplace"><span>Marketplace</span></NavLink>
             <NavLink data-short="E" to="/events"><span>Events</span></NavLink>
             <NavLink data-short="T" to="/tactics"><span>Tactics</span></NavLink>
+            {user?.role === "manager" && <NavLink data-short="K" to="/knowledge"><span>Knowledge</span></NavLink>}
+            {user?.role === "manager" && <NavLink data-short="G" to="/agent-settings"><span>Agent Settings</span></NavLink>}
             {user?.role === "manager" && <NavLink data-short="A" to="/admin/users"><span>Accounts</span></NavLink>}
           </div>
           <div className="account-menu">

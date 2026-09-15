@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     session_cookie_name: str = "recruitment_session"
     session_lifetime_hours: int = 24
     cookie_secure: bool = False
+    # Agent Service 调用 Backend 内部只读 API 时使用的共享密钥。
+    # 生产环境必须通过环境变量 AGENT_SERVICE_TOKEN 设置，不能提交真实值。
+    agent_service_token: str | None = None
+    agent_service_url: str = "http://127.0.0.1:8001"
+    agent_service_timeout_seconds: float = 120.0
 
     @property
     def effective_database_url(self) -> str | None:

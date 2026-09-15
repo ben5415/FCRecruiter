@@ -2,15 +2,22 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { getPlayerDetail, type PlayerDetail } from "../api/players";
+import { analyseRecruitment, type RecruitmentAnalysisResult } from "../api/recruitment";
+import { useAuth } from "../auth/AuthContext";
+import { RecruitmentReportPanel } from "../components/RecruitmentReportPanel";
 
 const money = new Intl.NumberFormat("en", { style: "currency", currency: "EUR", notation: "compact", maximumFractionDigits: 1 });
 const label = (value: string) => value.split("_").map((part) => part[0].toUpperCase() + part.slice(1)).join(" ");
 
 export function PlayerDetailPage() {
+  const { csrfToken } = useAuth();
   const { playerId } = useParams();
   const navigate = useNavigate();
   const [player, setPlayer] = useState<PlayerDetail | null>(null);
   const [error, setError] = useState("");
+  const [analysis, setAnalysis] = useState<RecruitmentAnalysisResult | null>(null);
+  const [analysisError, setAnalysisError] = useState("");
+  const [analysing, setAnalysing] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -25,6 +32,19 @@ export function PlayerDetailPage() {
   if (!player) return <main className="marketplace"><div className="page-message">Loading player details…</div></main>;
   const name = player.long_name || player.short_name || `Player ${player.player_id}`;
 
+  async function analysePlayer() {
+    if (!csrfToken) return;
+    setAnalysing(true); setAnalysisError("");
+    try {
+      setAnalysis(await analyseRecruitment({
+        player_id: player!.player_id,
+        question: `Assess whether ${name} should be recruited. Compare the player's profile with our positional strength, squad depth and the coach's current tactical requirements. Explain fit, overlap and risks using available evidence.`,
+      }, csrfToken));
+    } catch (reason) {
+      setAnalysisError(reason instanceof Error ? reason.message : "Could not analyse this player");
+    } finally { setAnalysing(false); }
+  }
+
   return <main className="marketplace player-detail-page">
     <button className="button--secondary player-detail__back" onClick={() => navigate(-1)}>← Back</button>
     <header className="player-detail__hero">
@@ -32,6 +52,10 @@ export function PlayerDetailPage() {
       <div><p className="eyebrow">{player.player_positions || "Player profile"}</p><h1>{name}</h1><p>{player.club_name || "Free agent"} · {player.league_name || "No league"} · {player.nationality_name || "Unknown nationality"}</p></div>
       <dl className="player-detail__headline"><div><dt>OVR</dt><dd>{player.overall ?? "—"}</dd></div><div><dt>POT</dt><dd>{player.potential ?? "—"}</dd></div></dl>
     </header>
+
+    <section className="player-agent-entry"><div><p className="eyebrow">Recruitment Agent</p><h2>Fit for this club</h2><p>Compare this player with the current squad and tactical approach.</p></div><button type="button" disabled={analysing} onClick={() => void analysePlayer()}>{analysing ? "Analysing…" : "Analyse recruitment fit"}</button></section>
+    {analysisError && <p className="form-error" role="alert">{analysisError}</p>}
+    {analysis && <RecruitmentReportPanel result={analysis} />}
 
     <section className="detail-panel"><h2>Profile</h2><dl className="detail-grid">
       <div><dt>Age / DOB</dt><dd>{player.age ?? "—"} · {player.dob || "—"}</dd></div><div><dt>Height / Weight</dt><dd>{player.height_cm ?? "—"} cm · {player.weight_kg ?? "—"} kg</dd></div>

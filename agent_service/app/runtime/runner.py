@@ -64,6 +64,7 @@ class AgentRunner(Generic[OutputT]):
         question: str,
         system_prompt: str,
         context: AgentRunContext,
+        history_messages: Sequence[BaseMessage] = (),
     ) -> AgentRunResult[OutputT]:
         """执行一次完整 Agent Run。"""
 
@@ -71,6 +72,7 @@ class AgentRunner(Generic[OutputT]):
         # 这里把摘要和最近消息插入 messages，但下面的循环不需要因此修改。
         messages: list[BaseMessage] = [
             SystemMessage(content=system_prompt),
+            *history_messages,
             HumanMessage(content=question),
         ]
         trace: list[AgentTraceEvent] = []
@@ -101,7 +103,19 @@ class AgentRunner(Generic[OutputT]):
                 )
 
             messages.append(response)
-            trace.append(_trace(step, "model", "invoke", True, started))
+            usage = response.usage_metadata or {}
+            trace.append(_trace(
+                step,
+                "model",
+                "invoke",
+                True,
+                started,
+                details={
+                    "input_tokens": int(usage.get("input_tokens", 0) or 0),
+                    "output_tokens": int(usage.get("output_tokens", 0) or 0),
+                    "total_tokens": int(usage.get("total_tokens", 0) or 0),
+                },
+            ))
 
             if response.tool_calls:
                 # 模型只提出 Tool 调用请求。Runtime 逐个验证和执行，随后进入下一次
@@ -138,6 +152,11 @@ class AgentRunner(Generic[OutputT]):
                             result.ok,
                             tool_started,
                             result.error_code,
+                            details={
+                                "tool_call_id": call_id,
+                                "arguments": call.get("args", {}),
+                                "result": result.model_dump(mode="json"),
+                            },
                         )
                     )
                     messages.append(
@@ -235,15 +254,18 @@ def _trace(
     success: bool,
     started: float,
     error_code: str | None = None,
+    details: dict[str, Any] | None = None,
 ) -> AgentTraceEvent:
     """根据开始时间创建轻量轨迹；暂时只在内存中保存。"""
 
-    details = {"error_code": error_code} if error_code else {}
+    event_details = dict(details or {})
+    if error_code:
+        event_details["error_code"] = error_code
     return AgentTraceEvent(
         step=step,
         event_type=event_type,
         name=name,
         success=success,
         latency_ms=max(0, round((perf_counter() - started) * 1000)),
-        details=details,
+        details=event_details,
     )

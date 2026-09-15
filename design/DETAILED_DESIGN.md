@@ -1,6 +1,6 @@
 # Football Recruitment Hub 详细设计
 
-> 文档状态：描述截至数据库迁移 `20260826_0010` 的当前实现。Agent、RAG、推荐与阵容推演尚未实现，相关内容仅作为扩展边界说明。
+> 文档状态：当前 Agent 采用代码配置，不再使用 Agent Definition Registry；轻量 Runtime、只读业务 Tool、短期 Memory、足球知识检索与 Web 招募分析入口已实现。
 
 ## 1. 产品定位
 
@@ -495,7 +495,7 @@ PYTHONPATH=backend .venv/bin/python scripts/mock_arsenal_events.py
 - 战术只有当前版本，没有历史记录或比赛维度。
 - 没有自动化前端测试、性能测试和生产部署配置。
 
-## 15. Agent 扩展边界
+## 15. Agent Service 当前实现与扩展边界
 
 后续 Agent 应作为现有确定性系统的消费者和建议层，而不是替代现有模块。推荐的集成顺序是：
 
@@ -506,3 +506,29 @@ PYTHONPATH=backend .venv/bin/python scripts/mock_arsenal_events.py
 5. 将建议展示在阵容、战术或 shortlist 的关键节点，而不是开放通用对话能力。
 
 Agent 不应直接绕过 API 权限读取其他租户，也不应直接提交删除、用户管理或不可逆操作。所有模型输出都应被视为不可信输入并经过结构校验。
+
+当前 Agent Service 已实现：
+
+- `AgentRunner` 的模型调用、Tool Calling、步数/次数/超时限制、结构化校验与降级；
+- 通过服务间 API 读取阵容、战术、伤病和确定性候选球员，Backend 重建用户身份并执行租户隔离；
+- `ConversationThread`、`ConversationMessage` 和版本化 `ThreadSummary`；
+- 基于 `thread.revision` 的乐观并发控制，以及“滚动摘要 + 连续最近消息”的上下文裁剪；
+- Recruitment Prompt、Tool 白名单和输出 Schema 直接由代码定义；版本常量仅用于轨迹标识；
+- Thread 创建时记录当前代码版本，不需要预先注册或启用 Agent。
+- 基于 PostgreSQL + pgvector 保存足球知识文档与 1024 维片段向量，默认通过本机 Ollama 使用 `bge-m3`，并执行固定余弦检索和租户可见性条件；
+- 将知识检索注册为 `search_football_knowledge` Tool，并通过结构化 Evidence 连接阵容、事件、球员与知识片段来源；
+- 候选球员继续由 Backend 确定性筛选，LLM 只负责结合知识片段解释适配原因、风险与不确定性。
+
+Agent Service 数据库迁移命令：
+
+```bash
+make migrate-agent
+```
+
+服务间通信需要 Backend 与 Agent Service 使用相同的 `AGENT_SERVICE_TOKEN`。真实密钥只通过环境变量提供。
+
+知识向量迁移要求 PostgreSQL 服务器已安装 pgvector 扩展；Python 的 `pgvector` 包不能代替服务器扩展。知识导入示例：
+
+```bash
+make knowledge ARGS='path/to/football_knowledge.md'
+```

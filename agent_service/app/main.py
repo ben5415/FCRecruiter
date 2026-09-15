@@ -4,6 +4,10 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 from agent_service.app.config import get_agent_settings
+from agent_service.app.memory.api import router as memory_router
+from agent_service.app.knowledge.api import router as knowledge_router
+from agent_service.app.recruitment.api import router as recruitment_router
+from agent_service.app.registry.api import router as registry_router
 
 
 class HealthResponse(BaseModel):
@@ -30,6 +34,11 @@ def create_app() -> FastAPI:
             environment=settings.agent_environment,
             version=application.version,
         )
+
+    application.include_router(memory_router)
+    application.include_router(recruitment_router)
+    application.include_router(knowledge_router)
+    application.include_router(registry_router)
 
     return application
 
