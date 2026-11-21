@@ -1,0 +1,1 @@
+"""FCRecruiter Agent Service application."""

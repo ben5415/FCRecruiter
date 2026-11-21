@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FCRecruiter 类型化 Tool 与 Backend 安全边界设计</title>
+  <style>
+    :root {
+      --bg: #eef2f5;
+      --paper: #ffffff;
+      --ink: #18212a;
+      --muted: #63707c;
+      --line: #d7dfe5;
+      --blue: #155a8a;
+      --blue-soft: #e6f1f8;
+      --cyan: #168a91;
+      --green: #287451;
+      --green-soft: #e8f4ed;
+      --amber: #a96d12;
+      --amber-soft: #fff4db;
+      --red: #a63b35;
+      --red-soft: #fbeceb;
+      --code: #14222d;
+      --code-text: #e8f2f7;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 100% 0%, rgba(22, 138, 145, .12), transparent 30rem),
+        var(--bg);
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      line-height: 1.72;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 265px minmax(0, 920px);
+      gap: 40px;
+      max-width: 1270px;
+      margin: 0 auto;
+      padding: 34px 26px 90px;
+    }
+
+    nav {
+      position: sticky;
+      top: 22px;
+      align-self: start;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, .92);
+      box-shadow: 0 12px 35px rgba(20, 34, 45, .06);
+    }
+
+    nav strong {
+      display: block;
+      margin-bottom: 12px;
+      color: var(--blue);
+      letter-spacing: .08em;
+    }
+
+    nav a {
+      display: block;
+      padding: 7px 0;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    nav a:hover { color: var(--blue); }
+    main { min-width: 0; }
+
+    header {
+      padding: 50px 48px;
+      border-radius: 22px;
+      color: white;
+      background: linear-gradient(135deg, #113b57, #156879 68%, #238b83);
+      box-shadow: 0 20px 45px rgba(17, 59, 87, .2);
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: #c7e9e7;
+      font-weight: 750;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 800px;
+      font-size: clamp(34px, 6vw, 58px);
+      line-height: 1.08;
+      letter-spacing: -.04em;
+    }
+
+    header p {
+      max-width: 760px;
+      margin: 22px 0 0;
+      color: #ddecf1;
+      font-size: 18px;
+    }
+
+    section {
+      margin-top: 32px;
+      padding: 34px 38px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--paper);
+    }
+
+    h2, h3 { line-height: 1.25; }
+    h2 { margin: 0 0 18px; font-size: 29px; }
+    h3 { margin: 28px 0 10px; color: var(--blue); font-size: 20px; }
+    p { margin: 10px 0; }
+    a { color: var(--blue); }
+
+    code {
+      padding: .12em .36em;
+      border-radius: 5px;
+      color: #124e70;
+      background: var(--blue-soft);
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: .91em;
+    }
+
+    pre {
+      overflow-x: auto;
+      margin: 16px 0;
+      padding: 20px;
+      border-radius: 12px;
+      color: var(--code-text);
+      background: var(--code);
+      line-height: 1.58;
+    }
+
+    pre code { padding: 0; color: inherit; background: transparent; }
+
+    table {
+      width: 100%;
+      margin: 18px 0;
+      border-collapse: collapse;
+      font-size: 15px;
+    }
+
+    th, td {
+      padding: 12px 13px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th { color: var(--blue); background: var(--blue-soft); }
+
+    .callout {
+      margin: 18px 0;
+      padding: 16px 18px;
+      border-left: 4px solid var(--amber);
+      border-radius: 0 10px 10px 0;
+      background: var(--amber-soft);
+    }
+
+    .good { border-left-color: var(--green); background: var(--green-soft); }
+    .warning { border-left-color: var(--red); background: var(--red-soft); }
+
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 9px;
+      margin: 20px 0;
+    }
+
+    .flow span {
+      padding: 10px 13px;
+      border: 1px solid #bdd2df;
+      border-radius: 9px;
+      background: var(--blue-soft);
+      font-weight: 680;
+    }
+
+    .flow i { color: var(--cyan); font-style: normal; font-weight: 900; }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin: 18px 0;
+    }
+
+    .card {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #f9fbfc;
+    }
+
+    .card strong { display: block; margin-bottom: 6px; color: var(--blue); }
+
+    .tree {
+      white-space: pre;
+      overflow-x: auto;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .badge {
+      display: inline-block;
+      margin-right: 6px;
+      padding: 2px 8px;
+      border-radius: 99px;
+      color: var(--green);
+      background: var(--green-soft);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .small { color: var(--muted); font-size: 14px; }
+
+    @media (max-width: 880px) {
+      .layout { display: block; padding: 18px 14px 60px; }
+      nav { position: static; margin-bottom: 20px; }
+      nav a { display: inline-block; margin-right: 14px; }
+      header { padding: 36px 26px; }
+      section { padding: 27px 22px; }
+      .cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <nav aria-label="文档目录">
+      <strong>FCRECRUITER / GUIDE</strong>
+      <a href="#goal">1. 要解决的问题</a>
+      <a href="#architecture">2. 总体架构</a>
+      <a href="#map">3. 代码地图</a>
+      <a href="#typed-tools">4. 什么是类型化 Tool</a>
+      <a href="#four-tools">5. 四个业务 Tool</a>
+      <a href="#request">6. 一次调用发生什么</a>
+      <a href="#auth">7. 服务认证与角色鉴权</a>
+      <a href="#tenant">8. 租户隔离</a>
+      <a href="#boundary">9. 数据边界</a>
+      <a href="#sql">10. 为什么模型不能生成 SQL</a>
+      <a href="#errors">11. 失败与超时</a>
+      <a href="#examples">12. 使用示例</a>
+      <a href="#limits">13. 当前限制</a>
+      <a href="#reading">14. 推荐阅读顺序</a>
+    </nav>
+
+    <main>
+      <header>
+        <p class="eyebrow">Typed tools &amp; trusted execution boundary</p>
+        <h1>类型化 Tool 与 Backend 安全执行层</h1>
+        <p>让模型能够“查询足球数据”，但不能直接接触数据库、伪造租户身份或随意执行 SQL。本文从新手角度拆解 Agent Service 与业务 Backend 之间的完整调用链。</p>
+      </header>
+
+      <section id="goal">
+        <h2>1. 这部分要解决什么问题？</h2>
+        <p>LLM 很擅长理解“帮我找一个年轻、左脚、适合右路的球员”，但它不应该直接连接数据库。模型输出具有不确定性，也可能受到错误 Prompt 或 Prompt Injection 影响。</p>
+        <pre><code>危险做法：
+用户问题 → LLM 生成 SQL → 数据库执行 SQL → 返回结果
+
+可能出现：
+SELECT * FROM users;
+DELETE FROM team_events;
+SELECT * FROM players WHERE tenant_id = 其他球队;</code></pre>
+        <p>当前设计把模型的权限缩小为：只能从预先注册的 Tool 中选择，并填写经过 Pydantic 定义的参数。真正的鉴权、租户隔离和数据库查询全部由 Backend 决定。</p>
+        <div class="callout good"><strong>核心原则：</strong>模型只表达查询意图；Backend 决定这个身份能否查询、查询哪个租户、使用什么固定查询，以及最终返回哪些字段。</div>
+      </section>
+
+      <section id="architecture">
+        <h2>2. 总体架构</h2>
+        <div class="flow" aria-label="Tool 调用链">
+          <span>LLM</span><i>→</i><span>ToolRegistry</span><i>→</i>
+          <span>Recruitment Tool</span><i>→</i><span>HTTP Client</span><i>→</i>
+          <span>Backend 安全边界</span><i>→</i><span>SQLAlchemy 固定查询</span><i>→</i>
+          <span>受控响应</span>
+        </div>
+        <table>
+          <thead><tr><th>层</th><th>主要职责</th><th>不负责什么</th></tr></thead>
+          <tbody>
+            <tr><td>LLM</td><td>理解问题，决定调用哪个 Tool 和填写哪些业务参数。</td><td>不鉴权、不选择租户、不编写 SQL。</td></tr>
+            <tr><td>ToolRegistry</td><td>Tool 白名单、参数校验、调用次数和超时边界。</td><td>不直接查询业务数据库。</td></tr>
+            <tr><td>BusinessBackendClient</td><td>发送类型化 HTTP 请求并携带可信执行身份。</td><td>不实现足球查询规则。</td></tr>
+            <tr><td>Backend</td><td>服务认证、用户/角色核验、租户隔离、固定查询、字段裁剪。</td><td>不接受模型生成的 SQL。</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="map">
+        <h2>3. 代码地图</h2>
+        <div class="tree">agent_service/app/
+├── recruitment/
+│   ├── tool_schemas.py   # 模型可填写的 Tool 参数、HTTP 响应类型
+│   ├── tools.py          # 四个 ToolDefinition 和 Handler
+│   └── backend_client.py # Agent Service → Backend HTTP 客户端
+├── runtime/
+│   ├── tools.py          # ToolRegistry、二次白名单检查、超时与错误转换
+│   └── schemas.py        # AgentRunContext：tenant_id、user_id、role
+└── config.py             # Backend URL、服务密钥、HTTP 超时
+
+backend/app/
+├── modules/agent_tools/
+│   ├── dependencies.py   # 服务密钥、用户、角色和租户核验
+│   ├── schemas.py        # Backend 接受和返回的数据边界
+│   └── api.py            # 四个内部只读 API 和固定查询
+└── config.py             # AGENT_SERVICE_TOKEN</div>
+      </section>
+
+      <section id="typed-tools">
+        <h2>4. 什么是“类型化 Tool”？</h2>
+        <p>类型化 Tool 的输入不是任意字典，而是一个 Pydantic Model。例如确定性球员筛选使用 <code>PlayerSearchInput</code>：</p>
+        <pre><code>class PlayerSearchInput(StrictToolInput):
+    search: str | None
+    positions: list[str]
+    min_age: int | None
+    max_age: int | None
+    max_value_eur: int | None
+    max_wage_eur: int | None
+    preferred_foot: Literal["Left", "Right"] | None
+    minimum_overall: Literal["D", "C", "B", "A", "A+"] | None
+    limit: int  # 1 到 25</code></pre>
+        <p>ToolRegistry 会把这个 Model 转换成 JSON Schema 发给模型。模型因而知道字段名称、类型、范围和必填规则。</p>
+        <pre><code>{
+  "positions": ["RW", "LW"],
+  "max_age": 23,
+  "max_value_eur": 30000000,
+  "preferred_foot": "Left",
+  "minimum_overall": "A",
+  "limit": 5
+}</code></pre>
+        <p><code>extra="forbid"</code> 会拒绝没有声明的字段：</p>
+        <pre><code>{
+  "positions": ["RW"],
+  "sql": "SELECT * FROM users"
+}
+
+结果：invalid_tool_arguments，Handler 不会被调用。</code></pre>
+        <div class="callout"><strong>类型化不等于绝对安全。</strong>Pydantic 负责格式和范围，真正的权限与租户判断仍必须在 Backend 再做一次。</div>
+      </section>
+
+      <section id="four-tools">
+        <h2>5. 当前四个业务 Tool</h2>
+        <table>
+          <thead><tr><th>Tool</th><th>用途</th><th>Backend API</th></tr></thead>
+          <tbody>
+            <tr><td><code>get_squad</code></td><td>读取当前租户球队阵容。</td><td><code>GET /api/internal/agent-tools/squad</code></td></tr>
+            <tr><td><code>get_current_tactic</code></td><td>读取当前阵型、打法和备注。</td><td><code>GET /api/internal/agent-tools/tactic</code></td></tr>
+            <tr><td><code>get_injury_events</code></td><td>按可选日期范围读取医疗伤病事件。</td><td><code>POST /api/internal/agent-tools/injuries</code></td></tr>
+            <tr><td><code>search_players</code></td><td>按白名单条件确定性筛选外部候选球员。</td><td><code>POST /api/internal/agent-tools/players/search</code></td></tr>
+          </tbody>
+        </table>
+        <p>这些 Tool 都是只读的。它们不会修改战术、创建事件、删除用户或完成转会。</p>
+        <div class="cards">
+          <div class="card"><strong>确定性代码做什么？</strong>筛选、排序、范围判断、租户条件、评分转换和最大返回数量。</div>
+          <div class="card"><strong>LLM 做什么？</strong>选择合适 Tool、组合查询条件、理解结果并生成有依据的足球分析。</div>
+        </div>
+      </section>
+
+      <section id="request">
+        <h2>6. 一次 Tool 调用发生了什么？</h2>
+        <p>假设用户问：“找 5 名 23 岁以下、3000 万欧以内的左脚右边锋。”</p>
+        <ol>
+          <li>LLM 从已暴露的 Schema 中选择 <code>search_players</code>。</li>
+          <li>LLM 只生成位置、年龄、预算、惯用脚和数量等参数。</li>
+          <li><code>ToolRegistry.execute()</code> 再检查该 Tool 是否位于当前 Agent 白名单。</li>
+          <li>Pydantic 把模型参数验证为 <code>PlayerSearchInput</code>。</li>
+          <li>Tool Handler 调用 <code>BusinessBackendClient.search_players()</code>。</li>
+          <li>Client 从 <code>AgentRunContext</code> 取出 <code>tenant_id</code> 与 <code>user_id</code>，写入 HTTP Header。</li>
+          <li>Backend 验证服务密钥，并从业务数据库重新查询用户。</li>
+          <li>Backend 强制排除该租户自己的球队，并添加固定筛选条件。</li>
+          <li>Backend 把具体能力值转换为 D～A+，再返回受控字段。</li>
+          <li>Agent Service 再用响应 Pydantic Model 验证 Backend 响应。</li>
+          <li>ToolRegistry 把 JSON 结果放入 <code>ToolMessage</code>，交给 LLM 继续分析。</li>
+        </ol>
+        <pre><code>自然语言问题
+  → 结构化意图
+  → 两次输入校验
+  → Backend 固定查询
+  → 两次输出边界
+  → ToolMessage
+  → LLM 解释</code></pre>
+      </section>
+
+      <section id="auth">
+        <h2>7. 服务认证与角色鉴权</h2>
+        <h3>7.1 为什么不能使用浏览器 Cookie？</h3>
+        <p>浏览器访问 Backend 使用 Session Cookie 和 CSRF，但 Agent Service 是另一个服务器进程，不是浏览器。它使用服务间 Header：</p>
+        <pre><code>X-Agent-Service-Token: &lt;shared secret&gt;
+X-Tenant-ID: 15
+X-User-ID: 29</code></pre>
+        <p>Backend 使用恒定时间比较验证共享密钥，降低简单时序侧信道风险。密钥来自环境变量 <code>AGENT_SERVICE_TOKEN</code>，不能写进代码或提交到 Git。</p>
+
+        <h3>7.2 为什么没有发送 Role Header？</h3>
+        <p>Agent Service 中的 <code>AgentRunContext.role</code> 不能作为 Backend 的最终授权依据。HTTP Client故意不发送角色；Backend 根据 <code>user_id + tenant_id</code> 查询真实用户，再读取数据库里的角色。</p>
+        <pre><code>错误思路：X-Role: manager  ← 调用方可以伪造
+
+当前思路：
+user_id + tenant_id
+  → Backend 查询 User
+  → 检查 User.is_active
+  → 检查 Tenant.is_active
+  → 读取 User.role</code></pre>
+        <p>当前四个 Tool 都是只读查询，所以经理、球员、队医和教练四类有效角色均可使用。这个检查仍显式存在，未来可以改成按 Tool 区分，例如只有经理和队医可以读取更敏感的医疗字段。</p>
+      </section>
+
+      <section id="tenant">
+        <h2>8. 租户隔离如何实现？</h2>
+        <p>Agent Service 传来的 <code>tenant_id</code> 只是身份声明。Backend 会要求数据库中存在同一个用户与租户的组合：</p>
+        <pre><code>SELECT user
+WHERE user.id = :user_id
+  AND user.tenant_id = :tenant_id</code></pre>
+        <p>如果攻击者把阿森纳用户 ID 和切尔西 tenant ID 拼在一起，查询不到合法组合，Backend 返回 <code>403</code>，且不会透露用户到底是否存在。</p>
+        <p>通过身份检查后，每个查询还会再次注入租户或球队边界：</p>
+        <table>
+          <thead><tr><th>数据</th><th>强制边界</th></tr></thead>
+          <tbody>
+            <tr><td>球队阵容</td><td><code>Player.club_team_id == principal.user.tenant.club_team_id</code></td></tr>
+            <tr><td>当前战术</td><td><code>TeamTactic.tenant_id == principal.tenant_id</code></td></tr>
+            <tr><td>伤病事件</td><td><code>TeamEvent.tenant_id == principal.tenant_id</code> 且类型必须是 medical</td></tr>
+            <tr><td>球员市场</td><td>强制排除当前租户球队的球员</td></tr>
+          </tbody>
+        </table>
+        <div class="callout good"><strong>纵深防御：</strong>身份组合检查是一层，具体查询里的租户条件是另一层。即使未来某层代码改错，另一层仍能降低越权风险。</div>
+      </section>
+
+      <section id="boundary">
+        <h2>9. 数据边界控制</h2>
+        <p>数据库模型字段很多，但 Agent 不需要看到所有内容。Backend 使用专门的响应 Schema，只返回分析所需字段。</p>
+        <h3>9.1 球员字段</h3>
+        <p>可以返回姓名、位置、年龄、身价、工资、惯用脚、俱乐部和国籍；不会返回头像 URL 等无关内容。具体 OVR/POT 数字会转换为：</p>
+        <table>
+          <thead><tr><th>数值范围</th><th>公开等级</th></tr></thead>
+          <tbody>
+            <tr><td>低于 50</td><td>D</td></tr>
+            <tr><td>50～64</td><td>C</td></tr>
+            <tr><td>65～74</td><td>B</td></tr>
+            <tr><td>75～84</td><td>A</td></tr>
+            <tr><td>85 及以上</td><td>A+</td></tr>
+          </tbody>
+        </table>
+        <h3>9.2 数量与文本边界</h3>
+        <ul>
+          <li>球员搜索最多返回 25 条。</li>
+          <li>伤病事件最多返回 50 条。</li>
+          <li>搜索字符串最长 100 字符。</li>
+          <li>最多同时筛选 5 个位置。</li>
+          <li>年龄、预算、日期范围都经过 Pydantic 校验。</li>
+        </ul>
+        <p>这些限制同时控制数据泄露面、数据库负载和最终传给模型的 Token 数量。</p>
+      </section>
+
+      <section id="sql">
+        <h2>10. 为什么模型无法生成 SQL？</h2>
+        <p>模型看到的 Tool Schema 中根本没有 <code>sql</code>、<code>table</code> 或 <code>order_by</code> 字段。Agent Service 与 Backend 都使用 <code>extra="forbid"</code> 拒绝额外参数。</p>
+        <p>Backend 查询代码由开发者预先写好：</p>
+        <pre><code>filters = [排除当前球队]
+
+if payload.max_age is not None:
+    filters.append(Player.age &lt;= payload.max_age)
+
+if payload.max_value_eur is not None:
+    filters.append(Player.value_eur &lt;= payload.max_value_eur)
+
+select(Player).where(*filters).limit(payload.limit)</code></pre>
+        <p>模型只能决定“<code>max_age=23</code>”，不能决定 SQL 结构、表名或字段名。这种方式称为参数化的确定性查询边界。</p>
+        <div class="callout warning"><strong>不要新增通用 execute_sql Tool。</strong>即使声称“只允许 SELECT”，SQL 解析、函数滥用、跨租户 Join、资源耗尽和间接数据泄露仍然很难完整防御。为具体业务意图定义窄 Tool 更安全，也更容易评测。</div>
+      </section>
+
+      <section id="errors">
+        <h2>11. 失败、超时与异常降级</h2>
+        <p><code>ToolRegistry</code> 不把异常直接抛给模型，而是转换成统一结果：</p>
+        <pre><code>{
+  "tool_name": "search_players",
+  "tool_call_id": "call-1",
+  "ok": false,
+  "value": null,
+  "error_code": "tool_timeout",
+  "error_message": "Tool execution timed out"
+}</code></pre>
+        <table>
+          <thead><tr><th>错误</th><th>出现条件</th></tr></thead>
+          <tbody>
+            <tr><td><code>tool_not_allowed</code></td><td>模型请求了当前 Agent Definition 未授权的 Tool。</td></tr>
+            <tr><td><code>unknown_tool</code></td><td>Tool Registry 中不存在该名称。</td></tr>
+            <tr><td><code>invalid_tool_arguments</code></td><td>参数类型、范围、组合或额外字段不合法。</td></tr>
+            <tr><td><code>tool_timeout</code></td><td>执行超过 Runner 为单个 Tool 设置的时间。</td></tr>
+            <tr><td><code>tool_execution_error</code></td><td>Backend 拒绝请求、网络失败或返回非法结构。</td></tr>
+          </tbody>
+        </table>
+        <p>原始内部异常不会返回模型，避免泄露数据库、内部地址或认证细节。模型可以看到受控错误，并决定换一个 Tool 或在最终报告中说明数据不足。</p>
+      </section>
+
+      <section id="examples">
+        <h2>12. 如何装配和使用？</h2>
+        <h3>12.1 环境变量</h3>
+        <pre><code># Backend 和 Agent Service 使用相同密钥
+AGENT_SERVICE_TOKEN=请使用高强度随机值
+
+# Agent Service 配置
+BUSINESS_BACKEND_URL=http://127.0.0.1:8000/api
+BUSINESS_BACKEND_TIMEOUT_SECONDS=5</code></pre>
+
+        <h3>12.2 创建 Tool Registry</h3>
+        <pre><code>from agent_service.app.recruitment import (
+    RECRUITMENT_TOOL_NAMES,
+    build_recruitment_tools_from_settings,
+)
+
+registry = build_recruitment_tools_from_settings()</code></pre>
+
+        <h3>12.3 交给 Runner</h3>
+        <pre><code>runner = AgentRunner(
+    model=model_adapter,
+    tools=registry,
+    output_model=RecruitmentReport,
+    fallback_factory=recruitment_fallback,
+    allowed_tools=RECRUITMENT_TOOL_NAMES,
+)
+
+result = await runner.run(
+    question="推荐一名年轻左脚右边锋",
+    system_prompt=agent_definition.system_prompt,
+    context=AgentRunContext(
+        tenant_id=tenant_id,
+        user_id=user_id,
+        role=role,
+    ),
+)</code></pre>
+        <p><code>allowed_tools</code> 很重要：注册进进程不等于授权给当前 Agent。Runner 暴露 Schema 时检查一次，Tool 执行时还会再次检查。</p>
+      </section>
+
+      <section id="limits">
+        <h2>13. 当前设计的限制与演进方向</h2>
+        <div class="cards">
+          <div class="card">
+            <strong>当前已完成</strong>
+            四个只读 Tool、两层参数校验、服务密钥认证、Backend 用户与角色重建、租户隔离、确定性查询、评分脱敏、错误与超时边界。
+          </div>
+          <div class="card">
+            <strong>后续可以增强</strong>
+            密钥轮换、mTLS、每个 Tool 的细粒度角色策略、请求 ID 与审计日志、限流、重试策略、服务健康熔断和真实 PostgreSQL 集成测试。
+          </div>
+        </div>
+        <p>共享密钥适合当前学习项目和本地部署，但大型生产系统通常会使用短期服务凭证、mTLS 或工作负载身份。不要把当前方案包装成“零信任基础设施”。</p>
+        <p>当前角色策略允许四类有效用户使用全部只读分析 Tool。所谓“角色鉴权”在这里表示 Backend 会从数据库核验真实角色并应用显式允许集合；尚未实现经理、教练、球员、队医之间不同的 Tool 读取权限。</p>
+      </section>
+
+      <section id="reading">
+        <h2>14. 新手推荐阅读顺序</h2>
+        <ol>
+          <li>先看 <code>recruitment/tool_schemas.py</code>，理解模型可以填写哪些字段。</li>
+          <li>再看 <code>recruitment/tools.py</code>，理解 ToolDefinition 如何把 Schema 和 Handler 绑定起来。</li>
+          <li>看 <code>runtime/tools.py</code>，重点理解白名单、Pydantic 校验、超时和错误转换。</li>
+          <li>看 <code>recruitment/backend_client.py</code>，观察身份 Header 和响应校验。</li>
+          <li>看 Backend 的 <code>agent_tools/dependencies.py</code>，理解为什么不信任上游 role。</li>
+          <li>最后看 Backend 的 <code>agent_tools/api.py</code>，逐个寻找强制租户条件与固定筛选。</li>
+        </ol>
+        <p class="small">配套测试：<code>agent_service/tests/test_recruitment_tools.py</code> 验证类型化调用；<code>backend/tests/test_agent_tools.py</code> 验证服务认证、跨租户拒绝和响应字段边界。</p>
+        <p><span class="badge">一句话总结</span>LLM 提出受约束的业务意图，Backend 使用可信身份执行固定查询，模型永远不直接拥有数据库能力。</p>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

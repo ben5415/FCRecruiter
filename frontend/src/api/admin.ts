@@ -14,20 +14,12 @@ export async function listUsers(): Promise<CurrentUser[]> {
   return result.items;
 }
 
-export interface ClubOption { club_team_id: number; club_name: string }
-
-export async function listClubs(): Promise<ClubOption[]> {
-  const result = await request<{ items: ClubOption[] }>("/api/admin/clubs");
-  return result.items;
-}
-
 export interface NewUser {
   username: string;
   password: string;
   display_name: string | null;
   email: string | null;
   role: Role;
-  managed_club_team_id: number;
 }
 
 export function createUser(payload: NewUser, csrfToken: string): Promise<CurrentUser> {
@@ -43,14 +35,6 @@ export function setUserActive(id: number, isActive: boolean, csrfToken: string):
     method: "PATCH",
     headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
     body: JSON.stringify({ is_active: isActive }),
-  });
-}
-
-export function setUserClub(id: number, clubId: number, csrfToken: string): Promise<CurrentUser> {
-  return request(`/api/admin/users/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
-    body: JSON.stringify({ managed_club_team_id: clubId }),
   });
 }
 

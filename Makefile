@@ -4,22 +4,28 @@ VENV := .venv
 PYTHON := $(VENV)/bin/python
 PIP := $(PYTHON) -m pip
 BACKEND_APP := app.main:app
+AGENT_APP := agent_service.app.main:app
 
-.PHONY: help setup setup-db migrate create-admin install install-backend install-frontend \
-	dev dev-backend dev-frontend test test-backend build build-frontend
+.PHONY: help setup setup-db migrate migrate-agent knowledge evaluate-agent tenant create-multitenant-db install install-backend install-agent install-frontend \
+	dev dev-backend dev-agent dev-frontend test test-backend test-agent build build-frontend
 
 help:
 	@echo "Available commands:"
 	@echo "  make setup          Create .venv and install Python/npm dependencies"
 	@echo "  make setup-db       Enable required PostgreSQL extensions"
 	@echo "  make migrate        Apply database schema migrations"
-	@echo "  make create-admin   Interactively create an administrator"
+	@echo "  make migrate-agent  Apply Agent Service database migrations"
+	@echo "  make knowledge ARGS='path/to/file.md'  Import football knowledge"
+	@echo "  make evaluate-agent ARGS='--limit 100'  Evaluate saved Agent runs"
+	@echo "  make tenant ARGS='list'  Manage tenants through the server-side CLI"
+	@echo "  make create-multitenant-db  Clone the current DB and apply tenant migration"
 	@echo "  make dev-backend    Start FastAPI on http://localhost:8000"
+	@echo "  make dev-agent      Start Agent Service on http://localhost:8001"
 	@echo "  make dev-frontend   Start React on http://localhost:5173"
-	@echo "  make test           Run backend tests"
+	@echo "  make test           Run backend and Agent Service tests"
 	@echo "  make build          Build the frontend"
 
-setup: install-backend install-frontend
+setup: install-backend install-agent install-frontend
 
 # Alias for setup, kept for discoverability.
 install: setup
@@ -29,6 +35,9 @@ $(PYTHON):
 
 install-backend: $(PYTHON)
 	$(PIP) install -r requirements.txt
+
+install-agent: $(PYTHON)
+	$(PIP) install -r agent_service/requirements.txt
 
 install-frontend:
 	npm install --prefix frontend
@@ -40,26 +49,45 @@ setup-db:
 migrate:
 	PYTHONPATH=backend $(PYTHON) -m alembic upgrade head
 
-create-admin:
-	PYTHONPATH=backend $(PYTHON) scripts/create_admin.py
+migrate-agent:
+	PYTHONPATH=. $(PYTHON) -m alembic -c agent_service/alembic.ini upgrade head
 
-# Run both development servers. Ctrl+C stops the Make target and its children.
+knowledge:
+	PYTHONPATH=. $(PYTHON) scripts/import_football_knowledge.py $(ARGS)
+
+evaluate-agent:
+	PYTHONPATH=. $(PYTHON) scripts/evaluate_agent_runs.py $(ARGS)
+
+tenant:
+	PYTHONPATH=backend $(PYTHON) scripts/manage_tenants.py $(ARGS)
+
+create-multitenant-db:
+	PYTHONPATH=backend $(PYTHON) scripts/create_multitenant_database.py
+
+# Run all development servers. Ctrl+C stops the Make target and its children.
 dev:
 	@trap 'kill 0' INT TERM EXIT; \
 	$(MAKE) dev-backend & \
+	$(MAKE) dev-agent & \
 	$(MAKE) dev-frontend & \
 	wait
 
 dev-backend:
 	PYTHONPATH=backend $(PYTHON) -m uvicorn $(BACKEND_APP) --reload --port 8000
 
+dev-agent:
+	PYTHONPATH=. $(PYTHON) -m uvicorn $(AGENT_APP) --reload --port 8001
+
 dev-frontend:
 	npm run dev --prefix frontend
 
-test: test-backend
+test: test-backend test-agent
 
 test-backend:
 	PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=backend $(PYTHON) -m pytest backend/tests -q
+
+test-agent:
+	PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=. $(PYTHON) -m pytest agent_service/tests -q
 
 build: build-frontend
 

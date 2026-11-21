@@ -3,8 +3,10 @@ import { useState } from "react";
 import type { Role } from "../api/auth";
 
 const ROLE_OPTIONS: Array<{ value: Role; label: string }> = [
-  { value: "user", label: "User" },
-  { value: "admin", label: "Admin" },
+  { value: "manager", label: "Manager" },
+  { value: "player", label: "Player" },
+  { value: "doctor", label: "Doctor" },
+  { value: "coach", label: "Coach" },
 ];
 
 export function RolePicker({ value, onChange }: { value: Role; onChange: (role: Role) => void }) {

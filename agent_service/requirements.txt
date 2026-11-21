@@ -1,0 +1,18 @@
+# Runtime
+fastapi
+uvicorn[standard]
+pydantic-settings
+
+# Agent runtime and model provider
+langchain
+langchain-deepseek
+
+# Persistence and migrations
+SQLAlchemy
+psycopg[binary]
+alembic
+pgvector
+
+# Tests
+httpx
+pytest

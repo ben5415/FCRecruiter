@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FCRecruiter 技术面试 QA 大全</title>
+  <style>
+    :root { --ink:#172019; --muted:#667069; --paper:#f4f2eb; --card:#fff; --line:#d8d7cf; --green:#185c42; --mint:#dff2e8; --amber:#8a5a00; --amber-bg:#fff0c9; --red:#9d2e2e; --red-bg:#f8dfdc; --blue:#285d8f; --blue-bg:#e5effa; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:var(--paper); font:16px/1.72 system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; }
+    header { padding:48px max(24px,calc((100vw - 1160px)/2)); color:#fff; background:linear-gradient(135deg,#102b20,#1b684a 65%,#b49a3c); }
+    header h1 { max-width:900px; margin:0 0 12px; font-size:clamp(2.1rem,5vw,4rem); line-height:1.04; letter-spacing:-.04em; }
+    header p { max-width:850px; margin:0; color:#deebe3; }
+    main { width:min(1160px,calc(100% - 32px)); margin:28px auto 80px; }
+    nav { position:sticky; z-index:10; top:0; display:flex; gap:8px; overflow:auto; padding:12px 0; background:color-mix(in srgb,var(--paper) 94%,transparent); backdrop-filter:blur(8px); }
+    nav a { flex:0 0 auto; padding:7px 11px; color:var(--green); border:1px solid var(--line); border-radius:999px; background:#fff; text-decoration:none; font-size:.82rem; font-weight:700; }
+    .toolbar { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; margin:20px 0; }
+    .toolbar input { width:100%; min-height:46px; padding:0 14px; border:1px solid var(--line); border-radius:10px; font:inherit; background:#fff; }
+    button { min-height:46px; padding:0 16px; color:#fff; border:0; border-radius:10px; background:var(--green); font-weight:750; cursor:pointer; }
+    section { scroll-margin-top:72px; margin-top:42px; }
+    h2 { margin:0 0 14px; font-size:1.8rem; letter-spacing:-.025em; }
+    h3 { margin:22px 0 8px; }
+    .lead,.truth,.script,.warning { padding:18px 20px; border:1px solid var(--line); border-radius:14px; background:#fff; }
+    .truth { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+    .truth div { padding:12px; border-radius:10px; background:#f7f7f2; }
+    .script { border-left:5px solid var(--green); }
+    .warning { border-color:#e8c4bf; background:var(--red-bg); }
+    code,pre { font-family:"SFMono-Regular",Consolas,monospace; }
+    code { padding:.08em .32em; border-radius:5px; background:#eceee9; }
+    pre { overflow:auto; padding:16px; border-radius:12px; color:#edf7f0; background:#17231c; line-height:1.55; }
+    .qa-list { display:grid; gap:10px; }
+    details { border:1px solid var(--line); border-radius:13px; background:var(--card); box-shadow:0 5px 18px rgba(26,38,30,.035); }
+    summary { position:relative; padding:17px 48px 17px 18px; cursor:pointer; list-style:none; font-weight:780; }
+    summary::-webkit-details-marker { display:none; }
+    summary::after { position:absolute; top:17px; right:18px; color:var(--green); content:"＋"; }
+    details[open] summary::after { content:"−"; }
+    .answer { padding:0 20px 20px; border-top:1px solid #ecece6; }
+    .answer p:first-child { margin-top:15px; }
+    .answer ul,.answer ol { padding-left:22px; }
+    .answer li { margin:5px 0; }
+    .badge { display:inline-block; margin-right:7px; padding:2px 8px; border-radius:999px; font-size:.72rem; font-weight:800; vertical-align:2px; }
+    .done { color:var(--green); background:var(--mint); }.partial { color:var(--amber); background:var(--amber-bg); }.design { color:var(--blue); background:var(--blue-bg); }.risk { color:var(--red); background:var(--red-bg); }
+    table { width:100%; border-collapse:collapse; background:#fff; }
+    th,td { padding:10px 12px; border:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { background:#edf1ec; }
+    .hidden { display:none !important; }
+    footer { margin-top:54px; padding-top:20px; color:var(--muted); border-top:1px solid var(--line); }
+    @media (max-width:700px) { .truth { grid-template-columns:1fr; }.toolbar { grid-template-columns:1fr; } }
+    @media print { body { background:#fff; font-size:11pt; } header { padding:20px; color:#000; background:#fff; border-bottom:2px solid #000; } header p { color:#333; } nav,.toolbar,button { display:none; } main { width:100%; margin:0; } section { break-before:page; } details { break-inside:avoid; box-shadow:none; } details:not([open]) .answer { display:block; } summary::after { display:none; } }
+  </style>
+</head>
+<body>
+<header>
+  <h1>FCRecruiter 技术面试 QA 大全</h1>
+  <p>面向“独立开发的智能足球俱乐部管理与引援平台”简历叙事。回答以当前代码为准，重点覆盖 LangChain Tool Calling、Agent Runtime、类型化 Tool、多租户边界、Memory、Agent Definition、RAG、Evidence、可观测性与评测。</p>
+</header>
+<main>
+  <nav>
+    <a href="#positioning">项目介绍</a><a href="#architecture">架构</a><a href="#runtime">Runtime</a><a href="#tools">Tool</a><a href="#security">权限</a><a href="#memory">Memory</a><a href="#registry">Definition</a><a href="#rag">RAG</a><a href="#evidence">Evidence</a><a href="#observability">观测评测</a><a href="#tradeoff">取舍</a><a href="#pressure">压力追问</a>
+  </nav>
+
+  <div class="toolbar"><input id="search" type="search" placeholder="搜索：Tool Calling、pgvector、租户、超时、幻觉……"><button id="expand">展开全部</button></div>
+
+  <section id="guide">
+    <h2>使用说明与事实边界</h2>
+    <div class="truth">
+      <div><span class="badge done">已完成</span><br>当前代码已经接入主流程，可以直接按实现回答。</div>
+      <div><span class="badge partial">部分完成</span><br>底层模块存在，但尚未接入完整产品流程，回答时必须主动说明。</div>
+      <div><span class="badge design">设计取舍</span><br>属于架构判断或后续方案，不能描述成已经上线。</div>
+    </div>
+    <div class="warning" style="margin-top:14px"><strong>不能夸大的内容：</strong>Memory 尚未接入招募分析；滚动摘要没有生产 LLM Generator；没有 Multi-Agent、显式 Planning 或 Reflection；Agent Definition 的 output schema 目前只保存快照；没有真实浏览器 E2E；可观测性没有前端 Run Inspector；当前不是生产环境。</div>
+  </section>
+
+  <section id="positioning" class="qa-section">
+    <h2>一、项目介绍与整体叙事</h2>
+    <div class="script"><strong>30 秒版本：</strong>FCRecruiter 是一个多租户足球俱乐部管理与智能引援平台。我把阵容、战术、伤病和球员市场组织成结构化业务上下文，并独立实现了一个基于 LangChain Tool Calling 的轻量 Agent Runtime。Agent 不直接访问数据库，而是通过类型化 Tool 调用 Backend 的租户隔离 API，最终用 Pydantic 生成带 Evidence、假设和不确定性的招募报告，同时记录版本、Tool、Token 和延迟用于离线评测。</div>
+    <div class="qa-list">
+      <details><summary><span class="badge done">已完成</span>Q1：这个项目解决什么问题？</summary><div class="answer"><p>足球数据库信息很多，但普通用户难以从大量属性中判断球队缺什么、应该如何筛人，以及某名球员是否适合当前战术。项目把阵容诊断、补强需求、确定性筛选和球员适配分析串成一个决策流程。AI 不代替用户做转会决定，只负责综合结构化数据并给出有依据的解释。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q2：为什么不是一个通用足球聊天机器人？</summary><div class="answer"><p>通用聊天缺少当前球队的可信上下文，推荐容易依赖模型记忆，而且无法直接转化为筛选操作。FCRecruiter 把 Agent 嵌入 Marketplace 和球员详情，在明确业务节点自动注入租户、阵容、战术和候选球员上下文，减少用户学习 Prompt 的成本。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q3：项目最核心的技术点是什么？</summary><div class="answer"><p>核心不是“调用一次大模型”，而是把不稳定的模型约束成受控业务能力：模型只能调用白名单 Tool，参数经 Pydantic 校验，数据由 Backend 做租户鉴权，Runner 控制步骤、次数和超时，最终报告再次通过 Schema 和 Evidence 约束，并将执行轨迹持久化。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q4：AI 和确定性代码如何分工？</summary><div class="answer"><p>搜索、分页、权限、租户隔离、日期计算、候选合法性和数据查询由代码负责；LLM 负责综合阵容、战术、伤病与知识片段，解释补强原因、适配性和风险。原则是“代码负责算得对，AI 负责讲明白”。</p></div></details>
+      <details><summary><span class="badge partial">部分完成</span>Q5：现在产品闭环到什么程度？</summary><div class="answer"><p>已完成阵容补强简报和指定球员适配分析两条主链。报告可以生成需求、候选和建议筛选条件，但前端目前只应用位置筛选，Evidence 也尚未完整展示；Shortlist、候选对比和用户反馈还没有完成。因此应称为可演示 MVP，不是成熟产品。</p></div></details>
+      <details><summary><span class="badge design">设计取舍</span>Q6：为什么选择 Embedded Agent？</summary><div class="answer"><p>用户的主要任务仍是浏览、筛选和比较球员，而不是与 Agent 长时间聊天。Embedded Agent 只在“不知道补什么”和“不知道某球员是否适合”两个高价值节点介入，更容易控制延迟、Token、幻觉和交互复杂度。</p></div></details>
+    </div>
+  </section>
+
+  <section id="architecture" class="qa-section">
+    <h2>二、系统架构</h2>
+    <pre>React
+  │ Cookie Session + CSRF
+  ▼
+Business Backend (FastAPI + PostgreSQL)
+  │ Service Token + tenant_id + user_id
+  ▼
+Agent Service
+  ├─ Runtime / Recruitment Agent
+  ├─ Memory / Agent Definition
+  ├─ Knowledge + pgvector
+  └─ Observability / Evaluation
+  │ 受控 Tool API
+  └──────────────► Business Backend ─► 业务数据库</pre>
+    <div class="qa-list">
+      <details><summary><span class="badge done">已完成</span>Q7：为什么把 Agent Service 独立出来？</summary><div class="answer"><p>AI 依赖、模型调用、向量检索和执行轨迹与普通 CRUD 的资源特征不同。独立服务可以隔离依赖、数据库和故障边界，也方便单独观测 Agent。但业务 Backend 仍掌握身份、权限和业务数据库，避免 Agent Service 成为第二套业务后端。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q8：这算微服务架构吗？</summary><div class="answer"><p>不强调完整微服务治理。业务功能仍在模块化单体 Backend 中，只把 AI 执行作为一个边界清晰的独立服务。没有服务发现、消息队列、分布式事务或复杂网关，所以更准确地说是“模块化单体 + 独立 Agent Service”。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q9：为什么 Agent Service 有独立数据库？</summary><div class="answer"><p>Agent 数据库存放 Thread、Message、摘要、知识向量、Agent Definition、运行轨迹和评测结果。这些数据生命周期与球员、战术等业务数据不同，独立存储可以避免 AI 实验和迁移影响核心业务库。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q10：服务间如何通信？</summary><div class="answer"><p>Backend 调 Agent Service 时携带共享服务 Token、可信 tenant_id 和 user_id。Agent Tool 再调用 Backend 内部 API，Backend 校验同一个服务 Token，并重新从数据库验证 user_id 是否属于 tenant_id，不相信模型或 Agent Service 提供的角色。</p></div></details>
+      <details><summary><span class="badge design">设计取舍</span>Q11：为什么不让前端直接调用 Agent Service？</summary><div class="answer"><p>浏览器不应接触服务密钥，也不能成为可信租户身份来源。由 Backend 统一处理登录 Session、CSRF 和身份映射，可以避免用户篡改 tenant_id，同时保持前端 API 稳定。</p></div></details>
+      <details><summary><span class="badge partial">部分完成</span>Q12：系统已经生产就绪了吗？</summary><div class="answer"><p>没有。模块测试和前端构建已经通过，但缺少真实浏览器 E2E、生产部署、HTTPS、限流、Secret Manager、监控告警和备份策略。面试中应明确定位为独立开发的可运行原型。</p></div></details>
+    </div>
+  </section>
+
+  <section id="runtime" class="qa-section">
+    <h2>三、Agent Runtime</h2>
+    <div class="qa-list">
+      <details><summary><span class="badge done">已完成</span>Q13：AgentRunner 的执行流程是什么？</summary><div class="answer"><ol><li>组合 System Prompt、历史消息和用户问题；</li><li>只把允许的 Tool Schema 暴露给模型；</li><li>调用 ModelAdapter；</li><li>如果模型返回 Tool Call，则逐个校验和执行；</li><li>把 ToolExecutionResult 封装成 ToolMessage；</li><li>继续调用模型；</li><li>没有 Tool Call 时把内容按输出 Pydantic Model 校验；</li><li>成功返回 AgentRunResult，失败返回同类型 fallback。</li></ol></div></details>
+      <details><summary><span class="badge done">已完成</span>Q14：当前是 ReAct 吗？</summary><div class="answer"><p>它是 ReAct 风格的行动—观察循环，但不是显式 ReAct。Runtime 能看到 Tool Call 和 Tool Result，看不到也不保存模型隐藏思维；没有解析 Thought/Action/Observation 文本。更准确的名称是“基于原生 Tool Calling 的受控 Agent Loop”。</p></div></details>
+      <details><summary><span class="badge design">设计取舍</span>Q15：有没有 Planning、Reflection 或 Multi-Agent？</summary><div class="answer"><p>没有。当前任务通常只需要查询阵容、战术、伤病和候选后生成报告，完整 Planner、Replanner 或多 Agent 协商会增加延迟与成本。项目选择有限步数的单 Agent Tool Calling，符合 Embedded Agent 定位。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q16：Runtime 有多通用？</summary><div class="answer"><p>它与足球领域解耦，可以通过不同 ToolRegistry、output_model、fallback_factory 和 Prompt 构建其他结构化业务 Agent。但 Runner 仍直接使用 LangChain 的 BaseMessage、AIMessage 和 ToolMessage，因此对不同业务较通用，对不同 Agent 框架并非完全解耦。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q17：ModelAdapter 的作用是什么？</summary><div class="answer"><p>Runner 只依赖最小的 <code>invoke(messages, tools)</code> 协议。LangChainModelAdapter 负责 <code>bind_tools</code>、调用 ChatModel 和验证返回 AIMessage。它隔离具体模型实例，便于测试注入 Fake Model，但还没有隔离 LangChain 消息类型。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q18：为什么不用 LangChain 自带的 create_agent？</summary><div class="answer"><p>项目希望显式掌握执行预算、Tool 校验、租户上下文、fallback、Trace 和结构化输出边界。手写的 Runner 很小，行为更容易测试和解释。但不会继续重做 Planning、图编排等成熟框架能力。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q19：如何防止 Agent 无限循环？</summary><div class="answer"><p>AgentLimits 限制最大模型步骤和最大 Tool 调用数，每次模型调用和 Tool 调用还有独立超时。模型始终请求 Tool 而不输出报告时，循环达到上限后返回 <code>step_limit_exceeded</code> 的结构化降级结果。</p></div></details>
+      <details><summary><span class="badge partial">部分完成</span>Q20：超时控制完整吗？</summary><div class="answer"><p>单次模型和单次 Tool 超时已经实现，但整次 Run 的总 deadline 尚未实现。理论上多轮调用总耗时可能超过 Backend 请求超时，这是当前 Runtime 最值得补的可靠性边界之一。</p></div></details>
+      <details><summary><span class="badge partial">部分完成</span>Q21：模型输出非法 JSON 怎么办？</summary><div class="answer"><p>当前用 <code>output_model.model_validate_json</code> 校验，失败后直接进入 fallback，不会把非法结果返回前端。尚未实现一次受限的格式修复重试，这是稳定性和延迟之间的待验证取舍。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q22：为什么 fallback 也必须是相同 Pydantic 类型？</summary><div class="answer"><p>这样上层始终处理同一种响应结构，不需要为异常结果开发第二套 UI。fallback 不伪造阵容结论或候选，只返回“暂时不可用”、错误代码和 high uncertainty。</p></div></details>
+      <details><summary><span class="badge partial">部分完成</span>Q23：多个 Tool Call 会并行执行吗？</summary><div class="answer"><p>目前同一模型响应中的多个 Tool Call 顺序执行，逻辑简单且 Trace 顺序明确，但会增加延迟。阵容、战术和伤病这类互不依赖的查询未来可以用受控并发优化。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q24：AgentRunContext 为什么独立存在？</summary><div class="answer"><p>它保存 run_id、tenant_id 和 user_id 等可信系统上下文，与模型产生的 Tool 参数分离。模型可以决定查询什么，但不能决定以哪个租户身份查询。当前 role 字段不参与实际鉴权，真实角色由 Backend 重查。</p></div></details>
+    </div>
+  </section>
+
+  <section id="tools" class="qa-section">
+    <h2>四、类型化 Tool 与数据边界</h2>
+    <div class="qa-list">
+      <details><summary><span class="badge done">已完成</span>Q25：ToolDefinition 包含什么？</summary><div class="answer"><p>包含 name、description、input_model 和 handler。input_model 同时生成给模型看的 JSON Schema，并在执行前校验模型参数；handler 才是真正执行的 Python 函数。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q26：ToolRegistry 解决什么问题？</summary><div class="answer"><p>它集中负责注册、防止重名、生成 Tool Schema、按名称查找、白名单校验、Pydantic 参数验证、同步/异步 Handler 兼容、超时和异常归一化。Runner 不需要知道每个业务 Tool 的实现。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q27：为什么“没有把 Tool 告诉模型”不是安全措施？</summary><div class="answer"><p>模型仍可能生成伪造或过期的 Tool 名称，因此执行层还会检查 allowed_names。安全边界必须在真正执行动作的位置，而不能只依靠 Prompt 或模型可见性。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q28：Tool 参数为什么必须用 Pydantic？</summary><div class="answer"><p>模型生成的 JSON 是不可信输入。Pydantic 可以拒绝未知字段、错误类型和超范围值，例如错误年龄、非法评分或不存在的 SQL 字段，从而把 LLM 的自由输出转换为稳定函数调用。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q29：为什么不让模型生成 SQL？</summary><div class="answer"><p>生成 SQL 会带来越权、注入、表结构耦合和不可预测查询成本。项目只允许固定 Tool 参数，Backend 用 SQLAlchemy 构造查询，并自动加租户条件和本队排除规则。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q30：Tool 失败会发生什么？</summary><div class="answer"><p>ToolRegistry 不把内部异常直接抛给模型，而是返回统一的 ToolExecutionResult，包括 ok、error_code 和安全错误信息。Runner 把它作为 ToolMessage 交给模型，让模型调整策略或在报告中声明限制。</p></div></details>
+      <details><summary><span class="badge risk">风险</span>Q31：Tool 结果和 Trace 有什么隐患？</summary><div class="answer"><p>当前 Trace 保存完整 arguments 和 result，可能包含大量球员或医疗事件数据，也会扩大数据库和响应体。正式版本需要字段级脱敏、结果摘要、大小上限，并且不应在普通分析响应中暴露完整内部 Trace。</p></div></details>
+    </div>
+  </section>
+
+  <section id="security" class="qa-section">
+    <h2>五、多租户、鉴权与安全</h2>
+    <div class="qa-list">
+      <details><summary><span class="badge done">已完成</span>Q32：多租户模型是什么？</summary><div class="answer"><p>一个租户对应一个俱乐部，一个租户包含多个用户。用户全局用户名唯一并固定属于一个租户；球队阵容来自租户绑定的 club_team_id，战术、事件和私有知识使用 tenant_id 隔离。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q33：如何防止模型跨租户访问？</summary><div class="answer"><p>tenant_id 不在模型 Tool 参数中，而来自 Backend 登录 Session，经服务间请求传给 Agent Service。Agent 再调用 Backend Tool API 时，Backend 用 user_id + tenant_id 重新查询用户并验证所属关系；SQLAlchemy 查询还会显式添加租户条件。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q34：共享 Service Token 足够安全吗？</summary><div class="answer"><p>对本地原型足够，用 hmac.compare_digest 避免普通字符串比较问题；生产环境还应使用 Secret Manager、HTTPS、密钥轮换、服务身份或短期签名 Token，并限制 Agent Service 的网络访问范围。</p></div></details>
+      <details><summary><span class="badge partial">部分完成</span>Q35：四种角色有不同 Tool 权限吗？</summary><div class="answer"><p>业务页面已经有经理、教练、球员和队医的不同事件权限，但当前只读 Agent Tool 对四种有效角色统一开放。Backend 会验证角色有效，却没有进一步按 Tool 区分医疗等敏感读取权限，这是后续权限细化点。</p></div></details>
+      <details><summary><span class="badge risk">风险</span>Q36：Agent Settings 的权限有什么问题？</summary><div class="answer"><p>Agent Definition 是全局配置，但当前入口对每个租户的经理开放，因此任意球队经理都可能切换所有租户使用的 Agent 版本。演示环境可以接受，正式设计应引入平台管理员或把 Definition 改为租户级。</p></div></details>
+    </div>
+  </section>
+
+  <section id="memory" class="qa-section">
+    <h2>六、短期 Memory</h2>
+    <div class="qa-list">
+      <details><summary><span class="badge partial">部分完成</span>Q37：Memory 目前实现了什么？</summary><div class="answer"><p>实现了 ConversationThread、ConversationMessage、ThreadSummary，消息顺序、revision 乐观锁、摘要版本、最近上下文裁剪和 Thread 绑定 Agent 版本。Repository 和 ContextBuilder 有测试。</p></div></details>
+      <details><summary><span class="badge partial">部分完成</span>Q38：Memory 接入实际分析了吗？</summary><div class="answer"><p>没有。Recruitment analyse 接口目前不接收 thread_id，也没有把 MemoryContextBuilder 的历史消息传给 Runner，所以每次点击仍然是独立分析。简历中应说“设计并实现 Memory 基础模块”，不要说完整多轮产品已上线。</p></div></details>
+      <details><summary><span class="badge partial">部分完成</span>Q39：滚动摘要完整吗？</summary><div class="answer"><p>RollingSummaryService 能选择旧消息、调用 SummaryGenerator、保存新摘要并处理并发冲突，但生产环境没有真实 SummaryGenerator，也没有自动触发摘要的业务流程。当前主要由 Fake Generator 测试。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q40：为什么需要 revision？</summary><div class="answer"><p>两个请求可能同时基于相同 Thread 状态追加消息。Repository 使用 expected_revision 和条件 UPDATE 实现乐观锁，只有一个请求能更新成功，另一个得到 409，防止消息序号和摘要状态被并发覆盖。</p></div></details>
+      <details><summary><span class="badge design">设计取舍</span>Q41：Memory 应该保存什么？</summary><div class="answer"><p>应该保存用户目标、预算、偏好和当前比较对象，不应该复制阵容、战术等可以实时查询的业务数据。数据库可保留完整消息，但每次只向模型发送摘要和最近消息。</p></div></details>
+    </div>
+  </section>
+
+  <section id="registry" class="qa-section">
+    <h2>七、Agent Definition 与版本治理</h2>
+    <div class="qa-list">
+      <details><summary><span class="badge done">已完成</span>Q42：为什么需要 Agent Definition？</summary><div class="answer"><p>Prompt、Tool 白名单和输出契约会随迭代变化。Definition 把当前代码配置保存为版本快照，支持注册、启用、禁用和当前版本发现，使 Trace 能关联具体 Agent 版本，也为回滚和版本评测提供基础。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q43：注册当前版本时保存什么？</summary><div class="answer"><p>服务端读取代码中的 system prompt、Tool 名称和 RecruitmentReport JSON Schema，生成递增版本。前端不能编辑 Prompt 或上传任意 Tool；相同配置重复注册不会生成新版本。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q44：如何保证同一 Agent 只有一个 active 版本？</summary><div class="answer"><p>启用新版本时 Repository 先把原 active 更新为 disabled，然后启用目标版本；PostgreSQL 还有针对 <code>status='active'</code> 的部分唯一索引作为数据库约束。</p></div></details>
+      <details><summary><span class="badge partial">部分完成</span>Q45：Definition 中的 output_schema 真正动态生效吗？</summary><div class="answer"><p>没有完全动态生效。System Prompt 和 Tool 白名单运行时从 active Definition 读取，但 output_model 仍在 Factory 中写死为 RecruitmentReport。数据库 output_schema 目前用于快照、去重和审计，而不是构造任意动态 Pydantic 类型。</p></div></details>
+      <details><summary><span class="badge design">设计取舍</span>Q46：为什么不做通用 Agent 注册平台？</summary><div class="answer"><p>项目只有一个核心 Recruitment Agent。通用 Prompt 编辑、动态 Tool 上传、Agent 商店和部署发现会把项目扩张成平台，偏离足球产品。当前只保留足够展示版本治理的最小能力。</p></div></details>
+    </div>
+  </section>
+
+  <section id="rag" class="qa-section">
+    <h2>八、RAG、PostgreSQL 与 pgvector</h2>
+    <div class="qa-list">
+      <details><summary><span class="badge done">已完成</span>Q47：知识入库流程是什么？</summary><div class="answer"><p>文本先标准化并计算 SHA-256，按段落和字符窗口切片，通过 EmbeddingAdapter 批量生成向量，再把 Document、Chunk、元数据、token_estimate 和 vector 保存到 Agent PostgreSQL。相同租户、来源和校验值会去重。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q48：检索流程是什么？</summary><div class="answer"><p>查询文本先生成向量，Repository 用 pgvector cosine distance 排序，读取全局知识 tenant_scope=0 和当前租户私有知识，再按 min_similarity 过滤并返回知识片段和 evidence_source_id。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q49：为什么选择 PostgreSQL + pgvector？</summary><div class="answer"><p>项目已有 PostgreSQL，数据规模不大，pgvector 可以让文档、租户元数据和向量处在同一个事务与权限体系中，减少独立向量数据库的部署成本。它不代表所有规模下都优于专用向量数据库。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q50：为什么使用本地 Ollama Embedding？</summary><div class="answer"><p>主要为了避免按次 Embedding 成本，并减少俱乐部私有知识外发。EmbeddingAdapter 让 KnowledgeService 不依赖具体 Provider，也保留 OpenAI-compatible 和本地 Sentence Transformer 实现。</p></div></details>
+      <details><summary><span class="badge risk">限制</span>Q51：Embedding 模型能随便换吗？</summary><div class="answer"><p>不能只改模型名。当前数据库列固定为 Vector(1024)，代码会校验返回维度。更换不同维度模型需要重新生成向量并进行数据库迁移。</p></div></details>
+      <details><summary><span class="badge partial">部分完成</span>Q52：当前 RAG 有哪些不足？</summary><div class="answer"><p>切片只按段落和字符窗口；没有 Markdown 层级解析、关键词混合检索、Reranker、Query Rewrite 或系统化检索评测。对作品集 MVP 足够，但不能称为高级 RAG。</p></div></details>
+      <details><summary><span class="badge design">设计取舍</span>Q53：为什么不应该每次都调用 RAG？</summary><div class="answer"><p>阵容人数、伤病和球员属性已经有结构化事实，额外检索会增加 Embedding 延迟、上下文和 Token。RAG 应用于战术概念、内部球探报告或行业知识确实能补充事实的场景。</p></div></details>
+    </div>
+  </section>
+
+  <section id="evidence" class="qa-section">
+    <h2>九、结构化输出与 Evidence</h2>
+    <div class="qa-list">
+      <details><summary><span class="badge done">已完成</span>Q54：最终报告包含什么？</summary><div class="answer"><p>RecruitmentReport 包含状态、摘要、补强需求、候选推荐、建议筛选条件、假设和不确定性。Candidate 还包含 fit grade、理由、风险和 Evidence。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q55：Evidence 如何防止模型随意推荐？</summary><div class="answer"><p>Evidence 使用固定 source_type 和带前缀的 source_id，例如 player:123、tactic:current、knowledge:&lt;uuid&gt;。Pydantic validator 强制每个候选包含与 player_id 完全匹配的 player Evidence；离线评测还会从 Tool Trace 中提取真实候选集合检查合法性。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q56：Evidence 能证明结论一定正确吗？</summary><div class="answer"><p>不能。Evidence 只能证明结论引用了哪些数据来源，不代表推断必然正确。报告仍要展示 assumptions 和 uncertainty，用户保留最终决策权。</p></div></details>
+      <details><summary><span class="badge partial">部分完成</span>Q57：前端已经展示 Evidence 了吗？</summary><div class="answer"><p>数据已经返回，但当前 RecruitmentReportPanel 没有完整渲染 Evidence 来源。因此后端约束已实现，用户侧可解释性展示尚未收尾。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q58：为什么不用自由文本报告？</summary><div class="answer"><p>结构化输出便于稳定渲染、应用筛选条件、链接球员页面、计算评测指标和执行版本比较。自由文本更灵活，但无法可靠进入后续业务流程。</p></div></details>
+    </div>
+  </section>
+
+  <section id="observability" class="qa-section">
+    <h2>十、可观测性与离线评测</h2>
+    <div class="qa-list">
+      <details><summary><span class="badge done">已完成</span>Q59：一次 Run 记录什么？</summary><div class="answer"><p>记录 run_id、tenant_id、user_id、Agent key/version、模型、问题、输出、是否降级、错误代码、步骤数、Tool 次数、输入/输出/总 Token、总延迟和逐步 Trace。</p></div></details>
+      <details><summary><span class="badge done">已完成</span>Q60：规则评测包含什么？</summary><div class="answer"><p>检查输出是否满足 RecruitmentReport、是否调用必要 Tool、推荐候选是否来自 search_players 或 get_candidate_player 的真实结果、补强需求和候选是否具有 Evidence。每项转成 RuleCheck 后计算通过率。</p></div></details>
+      <details><summary><span class="badge partial">部分完成</span>Q61：LLM-as-judge 怎么实现？</summary><div class="answer"><p>离线脚本可选调用 DeepSeek，以结构化 JudgeEvaluation 评价 relevance、evidence_use 和 actionability，并限制 Judge 数量。当前它只是少量辅助分析，没有人工标注校准、Judge Prompt 版本治理或稳定性验证。</p></div></details>
+      <details><summary><span class="badge design">设计取舍</span>Q62：为什么不能只用 LLM-as-judge？</summary><div class="answer"><p>Judge 也可能偏差、漂移并增加成本。候选合法性、Schema 和 Evidence 完整性适合确定性规则；只有相关性、表达质量和可行动性这类主观维度才适合少量 Judge。</p></div></details>
+      <details><summary><span class="badge partial">部分完成</span>Q63：评测体系还缺什么？</summary><div class="answer"><p>缺少固定的 10～20 条案例集、期望 Tool、合法候选集合、版本 A/B 聚合、回归门槛和报告页面。当前主要评估历史 Run，尚不能稳定比较两个版本在相同输入上的变化。</p></div></details>
+      <details><summary><span class="badge partial">部分完成</span>Q64：可观测性有前端页面吗？</summary><div class="answer"><p>没有。数据库已经保存 Run 和 Trace，但没有 Run 列表/详情 API、run_id 返回字段和 Agent Run Inspector。当前需要脚本或直接查询数据库查看。</p></div></details>
+    </div>
+  </section>
+
+  <section id="tradeoff" class="qa-section">
+    <h2>十一、设计取舍与优化方向</h2>
+    <div class="qa-list">
+      <details><summary><span class="badge design">设计取舍</span>Q65：当前最大性能瓶颈是什么？</summary><div class="answer"><p>不是 PostgreSQL 查询，而是多轮远程模型调用。当前模型可能每取一次数据就产生一轮往返，延迟随步骤线性增加；本地 Ollama Embedding 也可能成为 RAG 冷启动瓶颈。</p></div></details>
+      <details><summary><span class="badge design">设计取舍</span>Q66：如何做低延迟 Fast Path？</summary><div class="answer"><p>对明确按钮场景，由程序并行获取必需的 Squad、Tactic、Injuries 和 Candidate，先做确定性统计，再用一次模型调用生成报告；保留现有 Tool Calling Path 处理模糊问题。当前 Fast Path 尚未实现。</p></div></details>
+      <details><summary><span class="badge design">设计取舍</span>Q67：为什么不直接删除 Agent Loop，全写成工作流？</summary><div class="answer"><p>明确场景适合工作流，但模糊问题仍需要模型按需选择候选搜索或知识检索。更合理的是双路径，而不是二选一：高频按钮走 Fast Path，复杂开放问题走有限 Tool Calling。</p></div></details>
+      <details><summary><span class="badge design">设计取舍</span>Q68：如果重做，最先改什么？</summary><div class="answer"><ol><li>增加整次 Run 总 deadline；</li><li>Trace 脱敏和裁剪；</li><li>返回 run_id 并提供 Inspector；</li><li>建立固定评测集；</li><li>实现 Fast Path 并比较延迟、Token 和质量。</li></ol></div></details>
+      <details><summary><span class="badge design">设计取舍</span>Q69：为什么没有继续做 Multi-Agent？</summary><div class="answer"><p>当前数据查询与综合任务没有明确需要多个独立角色协作。Multi-Agent 会增加上下文重复、协调失败和 Token 成本。只有在医疗、战术和财务子任务确实需要独立权限、模型或长任务时才值得拆分。</p></div></details>
+      <details><summary><span class="badge design">设计取舍</span>Q70：项目如何控制成本？</summary><div class="answer"><p>使用本地 Ollama Embedding、限制模型步骤和 Tool 次数、对候选先做确定性筛选、RAG 按需使用、离线 Judge 默认关闭并限制数量。下一步是 Fast Path 和记录每种功能的平均 Token/延迟。</p></div></details>
+    </div>
+  </section>
+
+  <section id="pressure" class="qa-section">
+    <h2>十二、压力追问与诚实回答</h2>
+    <div class="qa-list">
+      <details><summary><span class="badge risk">压力题</span>Q71：这不就是套了个 LangChain 吗？</summary><div class="answer"><p>LangChain 主要提供模型消息与 bind_tools 接口。项目自己实现了 Runner 循环、ToolRegistry、参数校验、执行白名单、租户上下文、预算、超时、fallback、Evidence、版本发现、Trace 和规则评测。重点不是重复造完整框架，而是把模型能力嵌入具体业务边界。</p></div></details>
+      <details><summary><span class="badge risk">压力题</span>Q72：为什么叫 Agent，不就是多次函数调用？</summary><div class="answer"><p>模型会根据当前问题和 Observation 动态决定下一次 Tool，而不是程序写死全部顺序，因此具有有限自主性。但我不会把它夸大为全自主 Agent；准确定位是受控 Tool-Calling Agent。</p></div></details>
+      <details><summary><span class="badge risk">压力题</span>Q73：Memory 没接主流程，为什么写在简历？</summary><div class="answer"><p>更严谨的表述是“设计并实现 Thread、Message、滚动摘要和上下文裁剪基础模块”，而不是声称多轮产品完成。如果面试官认为简历措辞暗示完整接入，应主动说明并考虑修改简历。</p></div></details>
+      <details><summary><span class="badge risk">压力题</span>Q74：你真的做了 Agent 注册和发现吗？</summary><div class="answer"><p>实现了单一 Recruitment Agent 的最小版本治理：代码配置快照、递增版本、active 唯一约束、启用/禁用和运行时发现。没有做通用 Agent 市场、动态部署或 Provider 发现。</p></div></details>
+      <details><summary><span class="badge risk">压力题</span>Q75：pgvector 中没有知识数据时，RAG 算完成吗？</summary><div class="answer"><p>代码链路、租户隔离、Embedding 和检索实现可以完成，但产品效果还需要实际语料和检索评测。应该区分“能力实现”和“内容运营/效果验证”，不能只凭表结构宣称 RAG 有效果。</p></div></details>
+      <details><summary><span class="badge risk">压力题</span>Q76：怎么证明推荐质量？</summary><div class="answer"><p>目前能证明 Schema、Tool 选择、候选合法性和 Evidence 完整性等可验证指标；主观推荐质量只有少量 Judge 支持，尚未通过真实用户和固定案例集充分证明。这也是项目下一步最重要的验证工作。</p></div></details>
+      <details><summary><span class="badge risk">压力题</span>Q77：如果模型服务挂了，核心产品还能用吗？</summary><div class="answer"><p>球员市场、阵容、战术、事件和普通筛选仍是确定性业务功能，可以继续使用；Agent 分析返回明确降级或服务不可用，不应阻塞核心页面。这是 Embedded Agent 而不是 AI-first 产品的重要边界。</p></div></details>
+      <details><summary><span class="badge risk">压力题</span>Q78：你独立开发，如何证明不是 AI 工具生成后没理解？</summary><div class="answer"><p>应能现场画出一次 Run 的时序，逐段解释 Runner、Adapter、ToolRegistry、Context、Pydantic 和 Trace；能说明失败模式和未完成项，并能修改一个限制或增加一个 Fake Model 测试。承认不熟悉的外围 CRUD，比泛泛声称全栈精通更可信。</p></div></details>
+      <details><summary><span class="badge risk">压力题</span>Q79：这个项目最大的技术债是什么？</summary><div class="answer"><p>主链之外的能力过多：Memory、Registry、RAG、评测和多个页面都存在，但集成深度不一致。另一个债务是 Agent Service 和 Backend 有重复响应 Schema。当前策略是聚焦 Runtime、Tool 边界和 Evaluation，其余模块只保留最小闭环。</p></div></details>
+      <details><summary><span class="badge risk">压力题</span>Q80：你从项目中最重要的收获是什么？</summary><div class="answer"><p>Agent 工程的难点不是让模型“会回答”，而是定义可信上下文、动作边界、失败行为和评测方法。真正可用的 AI 产品需要确定性系统承担数据与权限，模型只在适合的环节提供解释与综合。</p></div></details>
+    </div>
+  </section>
+
+  <section id="cheatsheet">
+    <h2>十三、面试速记表</h2>
+    <table>
+      <thead><tr><th>面试官问</th><th>一句话抓手</th></tr></thead>
+      <tbody>
+        <tr><td>Runtime</td><td>有限步数的 LangChain Tool-Calling Loop，加参数/输出校验、预算、超时和 fallback。</td></tr>
+        <tr><td>安全</td><td>模型参数不可信；租户身份由 Backend Session 产生，并在 Tool Backend 二次验证。</td></tr>
+        <tr><td>RAG</td><td>Ollama Embedding + PostgreSQL/pgvector，检索全局和租户私有知识，结果进入 Evidence。</td></tr>
+        <tr><td>Memory</td><td>底层 Thread/Message/Summary 已实现，但尚未接入招募分析主链。</td></tr>
+        <tr><td>Definition</td><td>单 Agent 的最小配置快照和 active 版本发现，不是通用 Agent 平台。</td></tr>
+        <tr><td>评测</td><td>规则评测确定性指标，少量 Judge 只评价主观质量；固定评测集尚待补齐。</td></tr>
+        <tr><td>取舍</td><td>Deterministic first；AI 负责综合解释；明确任务未来走单调用 Fast Path。</td></tr>
+        <tr><td>未完成</td><td>多轮 Memory、Run Inspector、固定评测集、Fast Path、E2E 和生产部署。</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>建议先掌握 Q13–Q31（Runtime 与 Tool），再掌握 Q32–Q36（租户与权限）和 Q59–Q70（观测、评测与取舍）。面试时不要背长答案，先用一句结论回答，再根据追问展开。</footer>
+</main>
+<script>
+  const search = document.querySelector('#search');
+  const details = [...document.querySelectorAll('details')];
+  search.addEventListener('input', () => {
+    const keyword = search.value.trim().toLowerCase();
+    details.forEach(item => {
+      const matched = !keyword || item.textContent.toLowerCase().includes(keyword);
+      item.classList.toggle('hidden', !matched);
+      if (keyword && matched) item.open = true;
+    });
+    document.querySelectorAll('.qa-section').forEach(section => {
+      section.classList.toggle('hidden', keyword && !section.querySelector('details:not(.hidden)'));
+    });
+  });
+  let expanded = false;
+  document.querySelector('#expand').addEventListener('click', event => {
+    expanded = !expanded;
+    details.filter(item => !item.classList.contains('hidden')).forEach(item => item.open = expanded);
+    event.currentTarget.textContent = expanded ? '折叠全部' : '展开全部';
+  });
+</script>
+</body>
+</html>

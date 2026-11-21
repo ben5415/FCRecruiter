@@ -38,7 +38,7 @@ async def login(
     )
     encoded = user.password_hash if user else DUMMY_PASSWORD_HASH
     valid = verify_password(payload.password.get_secret_value(), encoded)
-    if user is None or not valid or not user.is_active:
+    if user is None or not valid or not user.is_active or not user.tenant.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
 
     settings = get_settings()

@@ -28,7 +28,6 @@ export function SquadPage() {
     <main className="marketplace squad-page">
       <header className="marketplace__header">
         <div>
-          <p className="eyebrow">First team</p>
           <h1>{state.kind === "success" ? state.data.club.club_name : "Squad"}</h1>
         </div>
         <p>Review every player currently registered in the managed club.</p>
@@ -43,10 +42,10 @@ export function SquadPage() {
       {state.kind === "success" && (
         <>
           <div className="results-summary squad-summary">
-            <span>{state.data.total} first-team players</span>
+            <span>{state.data.total} players</span>
             <span>Ordered by overall rating</span>
           </div>
-          <section className="player-grid" aria-label="Manchester United squad">
+          <section className="player-grid" aria-label={`${state.data.club.club_name ?? "Club"} squad`}>
             {state.data.players.map((player) => (
               <PlayerCard key={player.player_id} player={player} />
             ))}

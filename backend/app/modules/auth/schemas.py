@@ -13,6 +13,15 @@ class AccountClubResponse(BaseModel):
     club_name: str | None
 
 
+class TenantResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    slug: str
+    club: AccountClubResponse
+
+
 class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -22,8 +31,8 @@ class UserResponse(BaseModel):
     email: str | None
     role: str
     is_active: bool
-    managed_club_team_id: int
-    managed_club: AccountClubResponse
+    tenant_id: int
+    tenant: TenantResponse
 
 
 class AuthResponse(BaseModel):
