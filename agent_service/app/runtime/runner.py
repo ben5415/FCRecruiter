@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable, Sequence
+import json
 from time import perf_counter
 from typing import Any, Generic, TypeVar
 from uuid import uuid4
@@ -70,8 +71,16 @@ class AgentRunner(Generic[OutputT]):
 
         # 每个 Run 从 System + 当前问题开始。未来加入 Thread Memory 时，可以在
         # 这里把摘要和最近消息插入 messages，但下面的循环不需要因此修改。
+        output_schema = json.dumps(
+            self._output_model.model_json_schema(), ensure_ascii=False, separators=(",", ":")
+        )
         messages: list[BaseMessage] = [
-            SystemMessage(content=system_prompt),
+            SystemMessage(content=(
+                f"{system_prompt}\n\n"
+                "Final response contract: when you have finished using tools, return exactly one "
+                "JSON object and no Markdown or commentary. It must validate against this JSON "
+                f"Schema:\n{output_schema}"
+            )),
             *history_messages,
             HumanMessage(content=question),
         ]
@@ -172,25 +181,42 @@ class AgentRunner(Generic[OutputT]):
             # 没有 Tool Call 意味着模型认为任务已完成。这里不直接把字符串返回前端，
             # 而是强制用业务指定的 Pydantic Schema 做最终边界校验。
             validation_started = perf_counter()
+            raw_output = _message_text(response)
+            repaired_output = False
             try:
-                output = self._output_model.model_validate_json(_message_text(response))
-            except (ValidationError, ValueError, TypeError):
+                output = self._output_model.model_validate_json(_extract_json_text(raw_output))
+            except (ValidationError, ValueError, TypeError) as validation_error:
                 trace.append(
                     _trace(
                         step, "validation", "structured_output", False,
                         validation_started, "invalid_structured_output",
+                        details={"errors": _validation_error_details(validation_error)},
                     )
                 )
-                return self._fallback(
-                    "invalid_structured_output",
-                    "The model returned an invalid structured report",
-                    context,
-                    step,
-                    tool_call_count,
-                    trace,
+                repaired = await self._repair_structured_output(
+                    raw_output=raw_output,
+                    validation_error=validation_error,
+                    output_schema=output_schema,
+                    step=step + 1,
+                    trace=trace,
                 )
+                if repaired is None:
+                    return self._fallback(
+                        "invalid_structured_output",
+                        "The model returned an invalid structured report",
+                        context,
+                        step + 1,
+                        tool_call_count,
+                        trace,
+                    )
+                output = repaired
+                step += 1
+                repaired_output = True
 
-            trace.append(_trace(step, "validation", "structured_output", True, validation_started))
+            if not repaired_output:
+                trace.append(_trace(
+                    step, "validation", "structured_output", True, validation_started
+                ))
             return AgentRunResult[OutputT](
                 output=output,
                 step_count=step,
@@ -207,6 +233,74 @@ class AgentRunner(Generic[OutputT]):
             tool_call_count,
             trace,
         )
+
+    async def _repair_structured_output(
+        self,
+        *,
+        raw_output: str,
+        validation_error: Exception,
+        output_schema: str,
+        step: int,
+        trace: list[AgentTraceEvent],
+    ) -> OutputT | None:
+        """只允许一次无 Tool 的格式修复，避免把业务失败变成无限重试。"""
+
+        repair_messages: list[BaseMessage] = [
+            SystemMessage(content=(
+                "You repair structured JSON. Preserve supported facts from the draft, do not add "
+                "new football facts, and return exactly one JSON object with no Markdown. "
+                f"The required JSON Schema is:\n{output_schema}"
+            )),
+            HumanMessage(content=(
+                "The draft failed validation. Correct only its structure and required values.\n"
+                f"Validation errors:\n{_validation_error_details(validation_error)}\n"
+                f"Draft:\n{raw_output[:12_000]}"
+            )),
+        ]
+        started = perf_counter()
+        try:
+            response = await asyncio.wait_for(
+                self._model.invoke(repair_messages, ()),
+                timeout=self._limits.model_timeout_seconds,
+            )
+        except Exception:
+            trace.append(_trace(
+                step, "model", "structured_output_repair", False, started,
+                "structured_output_repair_failed",
+            ))
+            return None
+
+        usage = response.usage_metadata or {}
+        trace.append(_trace(
+            step,
+            "model",
+            "structured_output_repair",
+            True,
+            started,
+            details={
+                "input_tokens": int(usage.get("input_tokens", 0) or 0),
+                "output_tokens": int(usage.get("output_tokens", 0) or 0),
+                "total_tokens": int(usage.get("total_tokens", 0) or 0),
+            },
+        ))
+        if response.tool_calls:
+            return None
+        validation_started = perf_counter()
+        try:
+            output = self._output_model.model_validate_json(
+                _extract_json_text(_message_text(response))
+            )
+        except (ValidationError, ValueError, TypeError) as error:
+            trace.append(_trace(
+                step, "validation", "structured_output_repair", False,
+                validation_started, "invalid_structured_output",
+                details={"errors": _validation_error_details(error)},
+            ))
+            return None
+        trace.append(_trace(
+            step, "validation", "structured_output_repair", True, validation_started
+        ))
+        return output
 
     def _fallback(
         self,
@@ -245,6 +339,38 @@ def _message_text(message: AIMessage) -> str:
         elif isinstance(block, dict) and block.get("type") == "text":
             text_parts.append(str(block.get("text", "")))
     return "".join(text_parts)
+
+
+def _extract_json_text(text: str) -> str:
+    """兼容模型常见的 ```json 代码围栏，同时拒绝没有完整对象的文本。"""
+
+    stripped = text.strip()
+    if stripped.startswith("```"):
+        first_newline = stripped.find("\n")
+        if first_newline != -1:
+            stripped = stripped[first_newline + 1:]
+        if stripped.endswith("```"):
+            stripped = stripped[:-3].rstrip()
+    start = stripped.find("{")
+    end = stripped.rfind("}")
+    if start == -1 or end < start:
+        return stripped
+    return stripped[start:end + 1]
+
+
+def _validation_error_details(error: Exception) -> list[dict[str, Any]]:
+    """把 Pydantic 错误压缩为可持久化、不会包含内部对象的诊断信息。"""
+
+    if isinstance(error, ValidationError):
+        return [
+            {
+                "loc": [str(part) for part in item.get("loc", ())],
+                "type": str(item.get("type", "validation_error")),
+                "message": str(item.get("msg", "Invalid value")),
+            }
+            for item in error.errors(include_url=False)
+        ][:20]
+    return [{"loc": [], "type": type(error).__name__, "message": str(error)[:500]}]
 
 
 def _trace(

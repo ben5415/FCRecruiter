@@ -107,6 +107,40 @@ def test_runner_executes_tool_then_validates_structured_report() -> None:
     assert tool_payload["value"]["players"][0]["player_id"] == 10
 
 
+def test_runner_accepts_json_inside_markdown_fence() -> None:
+    model = SequenceModel([AIMessage(content=f"```json\n{valid_report()}\n```")])
+
+    result = asyncio.run(runner(model).run(
+        question="Analyse",
+        system_prompt="Return JSON.",
+        context=context(),
+    ))
+
+    assert result.degraded is False
+    assert result.output.summary == "Right-wing depth should be reviewed."
+
+
+def test_runner_repairs_invalid_structured_output_once() -> None:
+    model = SequenceModel([
+        AIMessage(content='{"summary":"Missing required fields"}'),
+        AIMessage(content=valid_report()),
+    ])
+
+    result = asyncio.run(runner(model).run(
+        question="Analyse",
+        system_prompt="Return JSON.",
+        context=context(),
+    ))
+
+    assert result.degraded is False
+    assert result.step_count == 2
+    assert [event.name for event in result.trace][-2:] == [
+        "structured_output_repair",
+        "structured_output_repair",
+    ]
+    assert model.calls[1][1] == []
+
+
 def test_invalid_tool_arguments_are_returned_to_model_without_calling_handler() -> None:
     called = False
 

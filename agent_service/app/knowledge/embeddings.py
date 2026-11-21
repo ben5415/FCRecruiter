@@ -12,6 +12,14 @@ import httpx
 from pydantic import BaseModel, ConfigDict
 
 
+class EmbeddingProviderError(RuntimeError):
+    """Embedding Provider 不可用或返回了无法消费的响应。"""
+
+
+class EmbeddingProviderUnavailableError(EmbeddingProviderError):
+    """网络连接失败或 Provider 超时，可由 API 转换成明确的 503。"""
+
+
 class EmbeddingAdapter(Protocol):
     @property
     def dimensions(self) -> int: ...
@@ -76,18 +84,28 @@ class OllamaEmbeddingAdapter:
                 timeout=self._timeout_seconds,
             )
 
-        if self._http_client is not None:
-            response = await send(self._http_client)
-        else:
-            async with httpx.AsyncClient() as client:
-                response = await send(client)
-
-        response.raise_for_status()
-        parsed = _OllamaEmbeddingResponse.model_validate(response.json())
+        try:
+            if self._http_client is not None:
+                response = await send(self._http_client)
+            else:
+                async with httpx.AsyncClient() as client:
+                    response = await send(client)
+            response.raise_for_status()
+            parsed = _OllamaEmbeddingResponse.model_validate(response.json())
+        except (httpx.ConnectError, httpx.TimeoutException) as error:
+            raise EmbeddingProviderUnavailableError(
+                "Cannot connect to Ollama embedding service"
+            ) from error
+        except (httpx.HTTPError, ValueError) as error:
+            raise EmbeddingProviderError(
+                "Ollama embedding service returned an invalid response"
+            ) from error
         if len(parsed.embeddings) != len(texts):
-            raise ValueError("Ollama returned an unexpected embedding count")
+            raise EmbeddingProviderError("Ollama returned an unexpected embedding count")
         if any(len(vector) != self._dimensions for vector in parsed.embeddings):
-            raise ValueError("Ollama embedding dimensions do not match the database schema")
+            raise EmbeddingProviderError(
+                "Ollama embedding dimensions do not match the database schema"
+            )
         return parsed.embeddings
 
     async def embed_query(self, text: str) -> list[float]:
@@ -129,18 +147,29 @@ class OpenAICompatibleEmbeddingAdapter:
                 timeout=self._timeout_seconds,
             )
 
-        if self._http_client is not None:
-            response = await send(self._http_client)
-        else:
-            async with httpx.AsyncClient() as client:
-                response = await send(client)
-        response.raise_for_status()
-        parsed = _EmbeddingResponse.model_validate(response.json())
+        try:
+            if self._http_client is not None:
+                response = await send(self._http_client)
+            else:
+                async with httpx.AsyncClient() as client:
+                    response = await send(client)
+            response.raise_for_status()
+            parsed = _EmbeddingResponse.model_validate(response.json())
+        except (httpx.ConnectError, httpx.TimeoutException) as error:
+            raise EmbeddingProviderUnavailableError(
+                "Cannot connect to embedding service"
+            ) from error
+        except (httpx.HTTPError, ValueError) as error:
+            raise EmbeddingProviderError(
+                "Embedding service returned an invalid response"
+            ) from error
         ordered = [item.embedding for item in sorted(parsed.data, key=lambda item: item.index)]
         if len(ordered) != len(texts):
-            raise ValueError("Embedding provider returned an unexpected item count")
+            raise EmbeddingProviderError("Embedding provider returned an unexpected item count")
         if any(len(vector) != self._dimensions for vector in ordered):
-            raise ValueError("Embedding dimensions do not match the database schema")
+            raise EmbeddingProviderError(
+                "Embedding dimensions do not match the database schema"
+            )
         return ordered
 
     async def embed_query(self, text: str) -> list[float]:
@@ -193,10 +222,15 @@ class LocalSentenceTransformerEmbeddingAdapter:
                 show_progress_bar=False,
             )
 
-        vectors = await asyncio.to_thread(encode)
+        try:
+            vectors = await asyncio.to_thread(encode)
+        except Exception as error:
+            raise EmbeddingProviderError("Local embedding model failed") from error
         result = [[float(value) for value in vector] for vector in vectors]
         if any(len(vector) != self._dimensions for vector in result):
-            raise ValueError("Local embedding dimensions do not match the database schema")
+            raise EmbeddingProviderError(
+                "Local embedding dimensions do not match the database schema"
+            )
         return result
 
     async def embed_documents(self, texts: Sequence[str]) -> list[list[float]]:

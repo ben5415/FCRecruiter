@@ -12,6 +12,7 @@ import { PlayerDetailPage } from "./pages/PlayerDetailPage";
 import { TacticsPage } from "./pages/TacticsPage";
 import { KnowledgePage } from "./pages/KnowledgePage";
 import { AgentSettingsPage } from "./pages/AgentSettingsPage";
+import { RagTestPage } from "./pages/RagTestPage";
 import "./styles.css";
 
 function App() {
@@ -21,7 +22,7 @@ function App() {
         <Route path="login" element={<LoginPage />} />
         <Route element={<ProtectedRoute />}><Route element={<AppShell />}>
           <Route index element={<Navigate replace to="/squad" />} /><Route path="squad" element={<SquadPage />} /><Route path="marketplace" element={<PlayersPage />} /><Route path="players/:playerId" element={<PlayerDetailPage />} /><Route path="events" element={<EventsPage />} /><Route path="tactics" element={<TacticsPage />} />
-          <Route element={<ProtectedRoute managerOnly />}><Route path="admin/users" element={<UserManagementPage />} /><Route path="knowledge" element={<KnowledgePage />} /><Route path="agent-settings" element={<AgentSettingsPage />} /></Route>
+          <Route element={<ProtectedRoute managerOnly />}><Route path="admin/users" element={<UserManagementPage />} /><Route path="knowledge" element={<KnowledgePage />} /><Route path="agent-settings" element={<AgentSettingsPage />} /><Route path="rag-test" element={<RagTestPage />} /></Route>
         </Route></Route>
       </Routes></AuthProvider>
     </BrowserRouter>

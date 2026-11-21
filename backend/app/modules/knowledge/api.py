@@ -13,6 +13,8 @@ from app.modules.knowledge.schemas import (
     CreateKnowledgeDocumentRequest,
     KnowledgeDocumentList,
     KnowledgeIngestResponse,
+    KnowledgeSearchRequest,
+    KnowledgeSearchResponse,
     MessageResponse,
 )
 
@@ -72,6 +74,20 @@ async def create_document(
         "POST", "/knowledge/documents", manager, payload.model_dump(mode="json")
     )
     return KnowledgeIngestResponse.model_validate(response.json())
+
+
+@router.post("/search", response_model=KnowledgeSearchResponse)
+async def search_knowledge(
+    payload: KnowledgeSearchRequest,
+    _: Annotated[AuthContext, Depends(require_csrf)],
+    manager: Manager,
+) -> KnowledgeSearchResponse:
+    """代理当前经理所属租户的真实 RAG 检索，不接受前端 tenant_id。"""
+
+    response = await _request(
+        "POST", "/knowledge/search", manager, payload.model_dump(mode="json")
+    )
+    return KnowledgeSearchResponse.model_validate(response.json())
 
 
 @router.delete("/documents/{document_id}", response_model=MessageResponse)

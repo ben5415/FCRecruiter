@@ -55,3 +55,19 @@ class KnowledgeSearchHit(BaseModel):
 class KnowledgeSearchResult(BaseModel):
     query: str
     hits: list[KnowledgeSearchHit]
+
+
+class KnowledgeSearchRequest(BaseModel):
+    """隐藏测试页使用的检索参数，不包含租户信息。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    query: str = Field(min_length=1, max_length=2_000)
+    limit: int = Field(default=5, ge=1, le=20)
+    min_similarity: float = Field(default=0.25, ge=-1, le=1)
+
+
+class KnowledgeSearchDebugResult(KnowledgeSearchResult):
+    """真实 Embedding 与 pgvector 检索的结果及服务端总耗时。"""
+
+    retrieval_ms: float = Field(ge=0)

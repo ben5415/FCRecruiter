@@ -44,7 +44,9 @@ class LangChainModelAdapter:
     ) -> AIMessage:
         # bind_tools 只是在本次模型调用中声明“有哪些函数可用”。模型不会在这里
         # 直接执行 Python 函数；它只会在 AIMessage.tool_calls 中提出调用请求。
-        bound_model = self._model.bind_tools(list(tools))
+        # 输出修复阶段不需要 Tool；部分 Provider 不接受 bind_tools([])，因此
+        # 空 Tool 集合时直接调用原模型。
+        bound_model = self._model.bind_tools(list(tools)) if tools else self._model
         response = await bound_model.ainvoke(list(messages))
         # Runner 后续依赖 AIMessage.tool_calls，因此在边界处尽早拒绝异常类型。
         if not isinstance(response, AIMessage):
